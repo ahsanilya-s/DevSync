@@ -1,0 +1,4 @@
+🚨 LongStatement (chaining) in FilePathReader.java:10 → chainingDepth=5
+🚨 LongStatement (chaining) in Fypv1Application.java:4 → chainingDepth=4
+🚨 LongStatement (chaining) in Fypv1ApplicationTests.java:3 → chainingDepth=4
+🚨 LongStatement (chaining) in Fypv1ApplicationTests.java:4 → chainingDepth=5
