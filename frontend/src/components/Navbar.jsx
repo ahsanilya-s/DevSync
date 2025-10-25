@@ -14,9 +14,3 @@ export default function Navbar(){
         </nav>
     )
 }
-git init
-git add .
-    git commit -m "Initial backend + frontend setup"
-git branch -M main
-git remote add origin <your-github-url>
-git push -u origin main

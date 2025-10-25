@@ -10,11 +10,10 @@ export default function Login(){
     async function handleLogin(){
         try {
             const res = await api.post('/auth/login', { email, password })
-            // backend should return success message or token. Here we assume simple success text
             alert(res.data)
-            nav('/')
+            nav('/home')
         } catch(e) {
-            alert('Login failed: ' + (e.response?.data || e.message))
+            alert('Invalid credentials')
         }
     }
     return (

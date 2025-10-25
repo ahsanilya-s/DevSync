@@ -78,17 +78,26 @@ public class UploadController {
             String reportPath = ReportGenerator.generateTextReport(allIssues, targetDir);
             
             // 5) get AI analysis
+            String aiStatus = "Failed";
             try {
                 String reportContent = ReportGenerator.readReportContent(reportPath);
                 String aiAnalysis = ollamaService.sendToOllama(reportContent);
                 ReportGenerator.appendAIAnalysis(reportPath, aiAnalysis);
+                aiStatus = "Added";
+            } catch (java.net.ConnectException ce) {
+                aiStatus = "Failed - Ollama not running";
+                System.err.println("AI analysis failed: Ollama not running on localhost:11434");
+            } catch (java.net.http.HttpTimeoutException te) {
+                aiStatus = "Failed - Timeout";
+                System.err.println("AI analysis failed: Request timed out");
             } catch (Exception aiEx) {
+                aiStatus = "Failed - " + aiEx.getMessage();
                 System.err.println("AI analysis failed: " + aiEx.getMessage());
             }
 
             // 6) response summary
-            String summary = String.format("✅ Analysis complete!\n📂 Extracted to: %s\n📄 Java files: %d\n📝 Report: %s\n🔍 Issues found: %d\n🤖 AI analysis: Added",
-                    targetDir, javaFiles.size(), reportPath, allIssues.size());
+            String summary = String.format("✅ Analysis complete!\n📂 Extracted to: %s\n📄 Java files: %d\n📝 Report: %s\n🔍 Issues found: %d\n🤖 AI analysis: %s",
+                    targetDir, javaFiles.size(), reportPath, allIssues.size(), aiStatus);
 
             return ResponseEntity.ok(summary);
 
