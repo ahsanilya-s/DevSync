@@ -17,7 +17,9 @@ public class OllamaService {
     private final ObjectMapper objectMapper;
     
     public OllamaService() {
-        this.httpClient = HttpClient.newHttpClient();
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(java.time.Duration.ofSeconds(10))
+                .build();
         this.objectMapper = new ObjectMapper();
     }
     
@@ -40,6 +42,7 @@ public class OllamaService {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(OLLAMA_URL))
                 .header("Content-Type", "application/json")
+                .timeout(java.time.Duration.ofSeconds(15))
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .build();
         

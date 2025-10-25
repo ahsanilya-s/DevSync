@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DevSync - Code Quality Checker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        header, footer {
+            background-color: #1e293b;
+            color: white;
+            text-align: center;
+            padding: 15px;
+        }
+        h1 {
+            margin: 0;
+        }
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .upload-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+        .upload-box input[type="file"] {
+            margin-top: 10px;
+        }
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #1e40af;
+        }
+        #report {
+            margin-top: 20px;
+            white-space: pre-wrap;
+            text-align: left;
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f9fafb;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>DevSync - Static Code Analysis Tool</h1>
+</header>
+
+<main>
+    <div class="upload-box">
+        <h2>Upload ZIP File</h2>
+        <input type="file" id="fileInput" accept=".zip" />
+        <button onclick="uploadFile()">Analyze</button>
+
+        <div id="report"></div>
+    </div>
+</main>
+
+<footer>
+    &copy; 2025 DevSync | All Rights Reserved
+</footer>
+
+<script>
+    async function uploadFile() {
+        const fileInput = document.getElementById('fileInput');
+        const reportBox = document.getElementById('report');
+
+        if (!fileInput.files.length) {
+            alert("Please select a ZIP file first.");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+
+        try {
+            reportBox.innerText = "⏳ Uploading and analyzing... Please wait.";
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status}`);
+            }
+
+            const text = await response.text();
+            reportBox.innerText = text;
+        } catch (error) {
+            console.error(error);
+            if (error.name === 'AbortError') {
+                reportBox.innerText = "❌ Request timed out. The analysis is taking too long.";
+            } else {
+                reportBox.innerText = "❌ Error: " + error.message;
+            }
+        }
+    }
+</script>
+
+</body>
+</html>

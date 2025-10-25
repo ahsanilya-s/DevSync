@@ -3,6 +3,7 @@ package com.devsync.controller;
 import com.devsync.utils.ZipExtractor;
 import com.devsync.analyzer.JavaFileCollector;
 import com.devsync.reports.ReportGenerator;
+import com.devsync.services.OllamaService;
 
 import com.devsync.detectors.LongMethodDetector;
 import com.devsync.detectors.LongParameterListDetector;
@@ -16,6 +17,7 @@ import com.devsync.detectors.UnnecessaryAbstractionDetector;
 import com.devsync.detectors.BrokenModularizationDetector;
 import com.devsync.detectors.DeficientEncapsulationDetector;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,6 +29,9 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/upload")
 public class UploadController {
+
+    @Autowired
+    private OllamaService ollamaService;
 
     @GetMapping
     public ResponseEntity<String> getUploadInfo() {
@@ -71,9 +76,18 @@ public class UploadController {
 
             // 4) generate report
             String reportPath = ReportGenerator.generateTextReport(allIssues, targetDir);
+            
+            // 5) get AI analysis
+            try {
+                String reportContent = ReportGenerator.readReportContent(reportPath);
+                String aiAnalysis = ollamaService.sendToOllama(reportContent);
+                ReportGenerator.appendAIAnalysis(reportPath, aiAnalysis);
+            } catch (Exception aiEx) {
+                System.err.println("AI analysis failed: " + aiEx.getMessage());
+            }
 
-            // 5) response summary
-            String summary = String.format("✅ File unzipped to: %s\n📄 Java files found: %d\n📝 Report generated at: %s\n\n🔍 Summary: %d issues found",
+            // 6) response summary
+            String summary = String.format("✅ Analysis complete!\n📂 Extracted to: %s\n📄 Java files: %d\n📝 Report: %s\n🔍 Issues found: %d\n🤖 AI analysis: Added",
                     targetDir, javaFiles.size(), reportPath, allIssues.size());
 
             return ResponseEntity.ok(summary);

@@ -59,7 +59,7 @@ public class EmptyCatchDetector {
     private static int countChar(String s, char c) {
         int count = 0;
         for (char ch : s.toCharArray()) if (ch == c) count++;
-        return count;git checkout secondary
+        return count;
 
     }
 }
