@@ -1,45 +1,71 @@
 package com.devsync.detectors;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.*;
+import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.expr.BinaryExpr;
+import com.github.javaparser.ast.expr.EnclosedExpr;
+import com.github.javaparser.ast.stmt.IfStmt;
 
-/**
- * Detect complex boolean conditions:
- * - >3 logical operators (&&, ||)
- * - nesting >2 (by parentheses)
- */
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class ComplexConditionalDetector {
 
-    private static final int OPERATOR_THRESHOLD = 3;
-    private static final int NESTING_THRESHOLD = 2;
+    private static final int MAX_LOGICAL_OPERATORS = 3;
+    private static final int MAX_NESTING = 2;
 
-    public static List<String> detect(File file) throws IOException {
+    public static List<String> detect(File file) {
         List<String> issues = new ArrayList<>();
-        List<String> lines = Files.readAllLines(file.toPath());
-        int lineNo = 0;
-        for (String l : lines) {
-            lineNo++;
-            String s = l.trim();
-            if (!(s.contains("if(") || s.contains("if (") || s.contains("while(") || s.contains("while (") || s.contains("&&") || s.contains("||"))) continue;
-            int opCount = 0;
-            if (s.contains("&&")) opCount += s.length() - s.replace("&&", "").length();
-            if (s.contains("||")) opCount += s.length() - s.replace("||", "").length();
-            // we counted chars; divide by 2 since each operator has length 2
-            opCount = opCount / 2;
-            int parenNesting = 0;
-            int maxNest = 0;
-            for (char c : s.toCharArray()) {
-                if (c == '(') parenNesting++;
-                else if (c == ')') parenNesting--;
-                maxNest = Math.max(maxNest, parenNesting);
+        try {
+            CompilationUnit cu = StaticJavaParser.parse(file);
+
+            for (IfStmt ifStmt : cu.findAll(IfStmt.class)) {
+                AtomicInteger opCount = new AtomicInteger();
+                countLogicalOperators(ifStmt.getCondition(), opCount);
+
+                int nesting = computeIfNestingDepth(ifStmt);
+
+                if (opCount.get() > MAX_LOGICAL_OPERATORS || nesting > MAX_NESTING) {
+                    issues.add(String.format("Complex conditional in %s at line %d -> operators=%d, nesting=%d",
+                            file.getName(),
+                            ifStmt.getBegin().map(p -> p.line).orElse(-1),
+                            opCount.get(), nesting));
+                }
             }
-            if (opCount > OPERATOR_THRESHOLD || maxNest > NESTING_THRESHOLD) {
-                issues.add(String.format("ComplexConditional in %s:%d → operators=%d, parenNesting=%d, stmt=\"%s\"",
-                        file.getName(), lineNo, opCount, maxNest, s));
-            }
+        } catch (Exception e) {
+            issues.add("Error parsing for ComplexConditionalDetector: " + e.getMessage());
         }
         return issues;
+    }
+
+    private static void countLogicalOperators(com.github.javaparser.ast.Node node, AtomicInteger counter) {
+        if (node == null) return;
+        if (node instanceof BinaryExpr) {
+            BinaryExpr bin = (BinaryExpr) node;
+            BinaryExpr.Operator op = bin.getOperator();
+            if (op == BinaryExpr.Operator.AND || op == BinaryExpr.Operator.OR) {
+                counter.incrementAndGet();
+            }
+            countLogicalOperators(bin.getLeft(), counter);
+            countLogicalOperators(bin.getRight(), counter);
+        } else if (node instanceof EnclosedExpr) {
+            countLogicalOperators(((EnclosedExpr) node).getInner(), counter);
+        } else {
+            for (com.github.javaparser.ast.Node child : node.getChildNodes()) {
+                countLogicalOperators(child, counter);
+            }
+        }
+    }
+
+    private static int computeIfNestingDepth(IfStmt ifStmt) {
+        int depth = 0;
+        com.github.javaparser.ast.stmt.Statement thenStmt = ifStmt.getThenStmt();
+        while (thenStmt.isIfStmt()) {
+            depth++;
+            thenStmt = thenStmt.asIfStmt().getThenStmt();
+        }
+        return depth;
     }
 }

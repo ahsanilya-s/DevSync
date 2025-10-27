@@ -59,6 +59,14 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+
+        <dependency>
+            <groupId>com.github.javaparser</groupId>
+            <artifactId>javaparser-core</artifactId>
+            <version>3.25.9</version>
+        </dependency>
+
+
         <!-- Spring Security for password encoding -->
         <dependency>
             <groupId>org.springframework.security</groupId>

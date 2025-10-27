@@ -1,47 +1,38 @@
 package com.devsync.detectors;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.FieldDeclaration;
 
-/**
- * Detect classes/interfaces that might be unnecessary abstraction:
- * Heuristic: a class with <2 members and abstract/interface or inheritance depth high & no children in project (approx).
- * For simplicity we flag classes with <2 members and abstract/interface or classes with name ending with 'Adapter'/'Base' but few members.
- */
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 public class UnnecessaryAbstractionDetector {
 
-    public static List<String> detect(File file) throws IOException {
+    // Heuristic: an abstract class or interface with very few members and no subclass usage suggests unnecessary abstraction.
+    private static final int MIN_MEMBERS = 2; // if below, considered suspicious
+    private static final int MAX_ABSTRACTION_DEPTH = 3; // not used here but can be extended
+
+    public static List<String> detect(File file) {
         List<String> issues = new ArrayList<>();
-        List<String> lines = Files.readAllLines(file.toPath());
-        String content = String.join("\n", lines);
-        // find class or interface blocks
-        String[] tokens = content.split("\\b(class|interface|enum)\\b");
-        // simple heuristic: count members by counting semicolons in class body
-        // find occurrences of "class Name" and body
-        Pattern p = Pattern.compile("(public\\s+)?(abstract\\s+)?(class|interface)\\s+(\\w+)\\s*([^\\{]*)\\{", Pattern.MULTILINE);
-        Matcher m = p.matcher(content);
-        while (m.find()) {
-            String cls = m.group(4);
-            int start = m.end();
-            // find body until matching brace
-            int brace = 1;
-            int idx = start;
-            int len = content.length();
-            while (idx < len && brace > 0) {
-                char c = content.charAt(idx++);
-                if (c == '{') brace++;
-                else if (c == '}') brace--;
+        try {
+            CompilationUnit cu = StaticJavaParser.parse(file);
+
+            for (ClassOrInterfaceDeclaration decl : cu.findAll(ClassOrInterfaceDeclaration.class)) {
+                boolean isAbstract = decl.isInterface() || decl.isAbstract();
+                int methodCount = decl.getMethods().size();
+                int fieldCount = decl.getFields().stream().mapToInt(f -> f.getVariables().size()).sum();
+
+                if (isAbstract && (methodCount + fieldCount) < MIN_MEMBERS) {
+                    issues.add(String.format("Unnecessary abstraction in %s: %s at line %d (methods=%d, fields=%d)",
+                            file.getName(), decl.getNameAsString(), decl.getBegin().map(p -> p.line).orElse(-1), methodCount, fieldCount));
+                }
             }
-            String body = content.substring(start, Math.min(idx, len));
-            int members = body.length() - body.replace(";", "").length();
-            boolean isAbstract = m.group(2) != null && m.group(2).contains("abstract");
-            if (members < 2 && (isAbstract || cls.toLowerCase().contains("base") || cls.toLowerCase().contains("adapter"))) {
-                issues.add(String.format("UnnecessaryAbstraction in %s: class=%s members=%d", file.getName(), cls, members));
-            }
+        } catch (Exception e) {
+            issues.add("Error parsing for UnnecessaryAbstractionDetector: " + e.getMessage());
         }
         return issues;
     }

@@ -1,65 +1,46 @@
 package com.devsync.detectors;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.*;
+import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.stmt.CatchClause;
+import com.github.javaparser.ast.stmt.BlockStmt;
 
-/**
- * Detects catch blocks that contain zero executable statements or only comments/logging with no handling.
- */
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 public class EmptyCatchDetector {
 
-    public static List<String> detect(File file) throws IOException {
+    public static List<String> detect(File file) {
         List<String> issues = new ArrayList<>();
-        List<String> lines = Files.readAllLines(file.toPath());
-        int n = lines.size();
-        boolean inCatch = false;
-        int startLine = 0;
-        int braceCount = 0;
-        int statements = 0;
-        for (int i = 0; i < n; i++) {
-            String l = lines.get(i);
-            String t = l.trim();
-            if (!inCatch) {
-                if (t.matches("catch\\s*\\(.*\\)\\s*\\{\\s*")) {
-                    inCatch = true;
-                    startLine = i + 1;
-                    braceCount = 1;
-                    statements = 0;
-                }
-            } else {
-                // inside catch
-                if (t.contains("{")) braceCount += countChar(t, '{');
-                if (t.contains("}")) braceCount -= countChar(t, '}');
+        try {
+            CompilationUnit cu = StaticJavaParser.parse(file);
 
-                // count simple statements: semicolon and not just comment or logging
-                String noComment = t.replaceAll("//.*", "").replaceAll("/\\*.*\\*/", "").trim();
-                if (!noComment.isEmpty()) {
-                    // consider logging (System.out / logger) as weak handling
-                    if (noComment.startsWith("System.out") || noComment.toLowerCase().contains("logger")) {
-                        // weak handling, count as 0 (we flag weak)
-                    } else if (noComment.endsWith(";")) {
-                        statements++;
-                    }
-                }
+            for (CatchClause cc : cu.findAll(CatchClause.class)) {
+                BlockStmt body = cc.getBody();
 
-                if (braceCount == 0) {
-                    // catch ended
-                    if (statements == 0) {
-                        issues.add(String.format("EmptyCatch in %s at line %d (no executable statements)", file.getName(), startLine));
+                // If catch body has zero executable statements (ignoring comments/labels)
+                if (body.isEmpty()) {
+                    issues.add(String.format("Empty catch clause in %s at line %d: exception=%s",
+                            file.getName(),
+                            cc.getBegin().map(p -> p.line).orElse(-1),
+                            cc.getParameter().getType().asString()));
+                } else {
+                    // If the body only contains simple logging with weak message, you can further flag.
+                    // Example heuristic: if body contains only a single statement that is a logger call with simple message,
+                    // flag it as weak handling. (Keep simple for now.)
+                    if (body.getStatements().size() == 1) {
+                        String stmt = body.getStatement(0).toString().toLowerCase();
+                        if (stmt.contains("print") || stmt.contains("log") && stmt.length() < 60) {
+                            issues.add(String.format("Weak logging in catch in %s at line %d: %s",
+                                    file.getName(), cc.getBegin().map(p -> p.line).orElse(-1), stmt.trim()));
+                        }
                     }
-                    inCatch = false;
                 }
             }
+        } catch (Exception e) {
+            issues.add("Error parsing for EmptyCatchDetector: " + e.getMessage());
         }
         return issues;
-    }
-
-    private static int countChar(String s, char c) {
-        int count = 0;
-        for (char ch : s.toCharArray()) if (ch == c) count++;
-        return count;
-
     }
 }

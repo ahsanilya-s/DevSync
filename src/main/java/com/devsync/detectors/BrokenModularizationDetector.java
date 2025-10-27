@@ -1,34 +1,45 @@
 package com.devsync.detectors;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.*;
+import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.expr.NameExpr;
+import com.github.javaparser.ast.ImportDeclaration;
 
-/**
- * Heuristic for broken modularization:
- * - Many imports from other packages (coupling)
- * - High number of public fields or many static references (very rough)
- * Thresholds: imports > 10 or many public fields (>5)
- */
+import java.io.File;
+import java.util.*;
+import java.util.stream.Collectors;
+
 public class BrokenModularizationDetector {
 
-    public static List<String> detect(File file) throws IOException {
+    // Heuristic thresholds
+    private static final int MAX_COUPLING = 5; // number of different external classes referenced
+    private static final int MAX_FAN_IN = 10; // not implemented fully, placeholder
+
+    public static List<String> detect(File file) {
         List<String> issues = new ArrayList<>();
-        List<String> lines = Files.readAllLines(file.toPath());
-        int importCount = 0;
-        int publicFieldCount = 0;
-        for (String l : lines) {
-            String t = l.trim();
-            if (t.startsWith("import ")) importCount++;
-            // public fields heuristic: "public Type name;"
-            if (t.matches("public\\s+[\\w\\<\\>\\[\\]]+\\s+\\w+\\s*;")) publicFieldCount++;
-        }
-        if (importCount > 10) {
-            issues.add(String.format("BrokenModularization in %s: imports=%d (high coupling)", file.getName(), importCount));
-        }
-        if (publicFieldCount > 5) {
-            issues.add(String.format("BrokenModularization in %s: publicFields=%d (low encapsulation)", file.getName(), publicFieldCount));
+        try {
+            CompilationUnit cu = StaticJavaParser.parse(file);
+
+            // Collect imports to estimate coupling
+            Set<String> imports = cu.findAll(ImportDeclaration.class).stream()
+                    .map(ImportDeclaration::getNameAsString)
+                    .collect(Collectors.toSet());
+
+            // Also count type usages in this file
+            Set<String> typeUsages = new HashSet<>();
+            cu.findAll(NameExpr.class).forEach(ne -> typeUsages.add(ne.getNameAsString()));
+
+            int couplingEstimate = imports.size();
+
+            if (couplingEstimate > MAX_COUPLING) {
+                issues.add(String.format("Potential broken modularization in %s: imports=%d, typeUsages=%d",
+                        file.getName(), imports.size(), typeUsages.size()));
+            }
+
+            // More advanced checks (package cycles, fan-in/fan-out) need whole-project analysis.
+        } catch (Exception e) {
+            issues.add("Error parsing for BrokenModularizationDetector: " + e.getMessage());
         }
         return issues;
     }

@@ -1,42 +1,56 @@
 package com.devsync.detectors;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.*;
+import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.FieldDeclaration;
+import com.github.javaparser.ast.Modifier;
 
-/**
- * Detect classes exposing too many public members.
- * Thresholds: >30% public members OR many getter/setter-only fields.
- */
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 public class DeficientEncapsulationDetector {
 
-    public static List<String> detect(File file) throws IOException {
+    // Thresholds
+    private static final double MAX_PUBLIC_PERCENT = 0.3; // >30% public fields flagged
+    private static final int MIN_IMMUTABLE_PERCENT = 1; // placeholder
+
+    public static List<String> detect(File file) {
         List<String> issues = new ArrayList<>();
-        List<String> lines = Files.readAllLines(file.toPath());
-        int totalMembers = 0;
-        int publicCount = 0;
-        int getters = 0;
-        int setters = 0;
-        for (String l : lines) {
-            String t = l.trim();
-            if (t.isEmpty()) continue;
-            // count member-like lines
-            if (t.endsWith(";") || t.endsWith("{") || t.endsWith("}")) {
-                totalMembers++;
-                if (t.startsWith("public ")) publicCount++;
-            }
-            if (t.matches("public\\s+[\\w\\<\\>\\[\\]]+\\s+get[A-Z]\\w*\\s*\\(\\s*\\)\\s*\\{?")) getters++;
-            if (t.matches("public\\s+void\\s+set[A-Z]\\w*\\s*\\(.*\\)\\s*\\{?")) setters++;
-        }
-        if (totalMembers > 0) {
-            double publicRatio = (double) publicCount / totalMembers;
-            if (publicRatio > 0.30) {
-                issues.add(String.format("DeficientEncapsulation in %s: publicRatio=%.2f (%d/%d)", file.getName(), publicRatio, publicCount, totalMembers));
-            }
-            if ((getters + setters) > 10 && (double)(getters + setters) / totalMembers > 0.5) {
-                issues.add(String.format("DeficientEncapsulation in %s: many getters/setters → %d", file.getName(), getters + setters));
-            }
+        try {
+            CompilationUnit cu = StaticJavaParser.parse(file);
+
+            // For each class, compute public field ratio
+            cu.findAll(com.github.javaparser.ast.body.ClassOrInterfaceDeclaration.class).forEach(cls -> {
+                List<FieldDeclaration> fields = cls.getFields();
+                if (fields.isEmpty()) return;
+
+                int total = 0, publicCount = 0, immutableCount = 0;
+                for (FieldDeclaration fd : fields) {
+                    total += fd.getVariables().size();
+                    if (fd.hasModifier(Modifier.Keyword.PUBLIC)) publicCount += fd.getVariables().size();
+
+                    // Simple immutable detection: final fields
+                    if (fd.hasModifier(Modifier.Keyword.FINAL)) immutableCount += fd.getVariables().size();
+                }
+
+                double pubRatio = total == 0 ? 0.0 : (double) publicCount / total;
+                double immRatio = total == 0 ? 0.0 : (double) immutableCount / total;
+
+                if (pubRatio > MAX_PUBLIC_PERCENT) {
+                    issues.add(String.format("Deficient encapsulation in %s: class=%s at line %d -> publicFields=%d/%d (%.0f%%)",
+                            file.getName(), cls.getNameAsString(), cls.getBegin().map(p -> p.line).orElse(-1),
+                            publicCount, total, pubRatio * 100));
+                }
+
+                if (immRatio < 0.2) { // less than 20% fields final -> suspicious
+                    issues.add(String.format("Low immutability in %s: class=%s -> finalFields=%d/%d (%.0f%%)",
+                            file.getName(), cls.getNameAsString(), immutableCount, total, immRatio * 100));
+                }
+            });
+
+        } catch (Exception e) {
+            issues.add("Error parsing for DeficientEncapsulationDetector: " + e.getMessage());
         }
         return issues;
     }

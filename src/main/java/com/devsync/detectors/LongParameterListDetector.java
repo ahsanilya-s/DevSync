@@ -1,50 +1,40 @@
 package com.devsync.detectors;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.MethodDeclaration;
 
-/**
- * Detects methods with many parameters:
- * - Threshold: > 4 parameters
- * - Distinct types > 3 flagged (simple heuristic by checking type tokens)
- */
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 public class LongParameterListDetector {
 
-    private static final int PARAM_THRESHOLD = 4;
-    private static final int DISTINCT_TYPE_THRESHOLD = 3;
+    // Thresholds
+    private static final int MAX_PARAMS = 5;
+    private static final int MAX_DISTINCT_TYPES = 3;
 
-    private static final Pattern METHOD_SIG = Pattern.compile(
-            "(public|protected|private|static|\\s)*[\\w\\<\\>\\[\\]]+\\s+\\w+\\s*\\(([^)]*)\\)\\s*\\{?");
-
-    public static List<String> detect(File file) throws IOException {
+    public static List<String> detect(File file) {
         List<String> issues = new ArrayList<>();
-        List<String> lines = Files.readAllLines(file.toPath());
-        String content = String.join("\n", lines);
-        Matcher m = METHOD_SIG.matcher(content);
-        while (m.find()) {
-            String params = m.group(2).trim();
-            if (params.isEmpty()) continue;
-            String[] parts = params.split(",");
-            int paramCount = parts.length;
-            Set<String> types = new HashSet<>();
-            for (String p : parts) {
-                String[] tokens = p.trim().split("\\s+");
-                if (tokens.length >= 2) {
-                    types.add(tokens[0]);
-                } else if (tokens.length == 1) {
-                    // if only one token, assume type missing (varargs or inference) -- count as distinct
-                    types.add(tokens[0]);
+        try {
+            CompilationUnit cu = StaticJavaParser.parse(file);
+
+            for (MethodDeclaration method : cu.findAll(MethodDeclaration.class)) {
+                int paramCount = method.getParameters().size();
+
+                // Count distinct parameter types
+                long distinctTypes = method.getParameters().stream()
+                        .map(p -> p.getType().asString())
+                        .distinct()
+                        .count();
+
+                if (paramCount > MAX_PARAMS || distinctTypes > MAX_DISTINCT_TYPES) {
+                    issues.add(String.format("Long Parameter List in %s: method=%s, params=%d, distinctTypes=%d",
+                            file.getName(), method.getNameAsString(), paramCount, distinctTypes));
                 }
             }
-            if (paramCount > PARAM_THRESHOLD || types.size() > DISTINCT_TYPE_THRESHOLD) {
-                String sigPreview = m.group(0).replace("\n", " ").trim();
-                issues.add(String.format("LongParameterList in %s: signature=\"%s\", params=%d, distinctTypes=%d",
-                        file.getName(), sigPreview, paramCount, types.size()));
-            }
+        } catch (Exception e) {
+            issues.add("Error parsing for LongParameterListDetector: " + e.getMessage());
         }
         return issues;
     }
