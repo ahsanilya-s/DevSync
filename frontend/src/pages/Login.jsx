@@ -13,7 +13,7 @@ export default function Login(){
             alert(res.data)
             nav('/home')
         } catch(e) {
-            alert('Invalid credential')
+            alert('Invalid credentials')
         }
     }
     return (
