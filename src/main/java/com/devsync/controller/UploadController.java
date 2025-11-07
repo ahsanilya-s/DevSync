@@ -1,6 +1,7 @@
 package com.devsync.controller;
 
 import com.devsync.utils.ZipExtractor;
+import com.devsync.utils.FolderNamingUtil;
 import com.devsync.analyzer.JavaFileCollector;
 import com.devsync.reports.ReportGenerator;
 import com.devsync.services.OllamaService;
@@ -10,12 +11,6 @@ import com.devsync.detectors.LongParameterListDetector;
 import com.devsync.detectors.MagicNumberDetector;
 import com.devsync.detectors.EmptyCatchDetector;
 import com.devsync.detectors.LongIdentifierDetector;
-import com.devsync.detectors.MissingDefaultSwitchDetector;
-import com.devsync.detectors.LongStatementDetector;
-import com.devsync.detectors.ComplexConditionalDetector;
-import com.devsync.detectors.UnnecessaryAbstractionDetector;
-import com.devsync.detectors.BrokenModularizationDetector;
-import com.devsync.detectors.DeficientEncapsulationDetector;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -45,14 +40,16 @@ public class UploadController {
         }
 
         try {
-            // 1) unzip to a unique folder
-            String targetDir = "uploads/" + System.currentTimeMillis();
+            // 1) unzip to a unique folder with original name
+            String originalFileName = file.getOriginalFilename();
+            String uniqueFolderName = FolderNamingUtil.generateUniqueFolderName(originalFileName, "uploads");
+            String targetDir = "uploads/" + uniqueFolderName;
             ZipExtractor.extractZip(file.getInputStream(), targetDir);
 
             // 2) collect .java files
             List<File> javaFiles = JavaFileCollector.collectJavaFiles(targetDir);
 
-            // 3) run detectors
+            // 3) run first five detectors only
             List<String> allIssues = new ArrayList<>();
             for (File f : javaFiles) {
                 try {
@@ -61,12 +58,6 @@ public class UploadController {
                     allIssues.addAll(MagicNumberDetector.detect(f));
                     allIssues.addAll(EmptyCatchDetector.detect(f));
                     allIssues.addAll(LongIdentifierDetector.detect(f));
-                    allIssues.addAll(MissingDefaultSwitchDetector.detect(f));
-                    allIssues.addAll(LongStatementDetector.detect(f));
-                    allIssues.addAll(ComplexConditionalDetector.detect(f));
-                    allIssues.addAll(UnnecessaryAbstractionDetector.detect(f));
-                    allIssues.addAll(BrokenModularizationDetector.detect(f));
-                    allIssues.addAll(DeficientEncapsulationDetector.detect(f));
                 } catch (Exception ex) {
                     // ensure one file failure doesn't break whole flow
                     allIssues.add(String.format("Error analyzing %s: %s", f.getName(), ex.getMessage()));
@@ -96,8 +87,9 @@ public class UploadController {
             }
 
             // 6) response summary
+            String reportFileName = new File(reportPath).getName();
             String summary = String.format("✅ Analysis complete!\n📂 Extracted to: %s\n📄 Java files: %d\n📝 Report: %s\n🔍 Issues found: %d\n🤖 AI analysis: %s",
-                    targetDir, javaFiles.size(), reportPath, allIssues.size(), aiStatus);
+                    targetDir, javaFiles.size(), reportFileName, allIssues.size(), aiStatus);
 
             return ResponseEntity.ok(summary);
 

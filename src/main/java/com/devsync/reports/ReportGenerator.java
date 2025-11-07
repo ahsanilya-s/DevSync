@@ -9,7 +9,8 @@ import java.util.List;
 public class ReportGenerator {
 
     public static String generateTextReport(List<String> issues, String outputDir) throws IOException {
-        String reportPath = outputDir + "/report.txt";
+        String folderName = new java.io.File(outputDir).getName();
+        String reportPath = outputDir + "/" + folderName + ".txt";
 
         try (FileWriter writer = new FileWriter(reportPath)) {
             if (issues.isEmpty()) {
