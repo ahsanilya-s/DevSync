@@ -6,16 +6,16 @@ export function Sidebar({ onNewAnalysis, onSettingsClick, onHistoryClick, isDark
   return (
     <div className={`fixed left-0 top-0 h-screen w-64 border-r flex flex-col p-4 transition-all duration-500 ${
       isDarkMode 
-        ? 'bg-gray-900 border-gray-800' 
-        : 'bg-white border-gray-200'
+        ? 'bg-gray-900 border-gray-800'
+        : 'bg-white border-gray-200' 
     }`}>
       {/* Logo */}
-      <div className="mb-8 px-2">
-        <h1 className={`text-transparent bg-clip-text bg-gradient-to-r transition-all duration-500 ${
-          isDarkMode ? 'from-blue-400 to-cyan-400' : 'from-blue-600 to-cyan-600'
-        }`}>
-          DevSync
-        </h1>
+      <div className="mb-8 px-2 ml-2">
+        <img 
+          src={isDarkMode ? "/logo_for_blacktheme.png" : "/logo_for_whitetheme.png"} 
+          alt="DevSync" 
+          className="h-8 w-auto transition-opacity duration-500" 
+        />
       </div>
 
       {/* New Analysis Button */}

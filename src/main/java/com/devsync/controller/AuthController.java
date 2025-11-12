@@ -32,13 +32,29 @@ public class AuthController {
         try {
             User found = userService.login(user.getEmail(), user.getPassword());
             if (found != null) {
-                return ResponseEntity.ok("Login successful");
+                return ResponseEntity.ok(new LoginResponse("Login successful", found.getId().toString(), found.getUsername()));
             } else {
                 return ResponseEntity.badRequest().body("Invalid credentials");
             }
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Login failed");
         }
+    }
+    
+    public static class LoginResponse {
+        private String message;
+        private String userId;
+        private String username;
+        
+        public LoginResponse(String message, String userId, String username) {
+            this.message = message;
+            this.userId = userId;
+            this.username = username;
+        }
+        
+        public String getMessage() { return message; }
+        public String getUserId() { return userId; }
+        public String getUsername() { return username; }
     }
 
     @GetMapping("/users")

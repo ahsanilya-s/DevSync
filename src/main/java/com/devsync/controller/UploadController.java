@@ -5,12 +5,19 @@ import com.devsync.utils.FolderNamingUtil;
 import com.devsync.analyzer.JavaFileCollector;
 import com.devsync.reports.ReportGenerator;
 import com.devsync.services.OllamaService;
+import com.devsync.model.AnalysisHistory;
+import com.devsync.repository.AnalysisHistoryRepository;
 
 import com.devsync.detectors.LongMethodDetector;
 import com.devsync.detectors.LongParameterListDetector;
 import com.devsync.detectors.MagicNumberDetector;
 import com.devsync.detectors.EmptyCatchDetector;
 import com.devsync.detectors.LongIdentifierDetector;
+import com.devsync.detectors.CodeDuplicationDetector;
+import com.devsync.detectors.GodClassDetector;
+
+import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.ast.CompilationUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -27,14 +34,47 @@ public class UploadController {
 
     @Autowired
     private OllamaService ollamaService;
+    
+    @Autowired
+    private AnalysisHistoryRepository analysisHistoryRepository;
 
     @GetMapping
     public ResponseEntity<String> getUploadInfo() {
         return ResponseEntity.ok("✅ Upload endpoint ready. Use POST with multipart/form-data.");
     }
 
+    @GetMapping("/report")
+    public ResponseEntity<String> getReport(@RequestParam("path") String reportPath, 
+                                           @RequestParam("userId") String userId) {
+        try {
+            // Verify user owns this report
+            boolean hasAccess = analysisHistoryRepository.findByUserIdOrderByAnalysisDateDesc(userId)
+                .stream().anyMatch(history -> history.getReportPath().equals(reportPath));
+            
+            if (!hasAccess) {
+                return ResponseEntity.status(403).body("❌ Access denied to this report");
+            }
+            
+            String reportContent = ReportGenerator.readReportContent(reportPath);
+            return ResponseEntity.ok(reportContent);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("❌ Failed to read report: " + e.getMessage());
+        }
+    }
+    
+    @GetMapping("/history")
+    public ResponseEntity<List<AnalysisHistory>> getUserHistory(@RequestParam("userId") String userId) {
+        try {
+            List<AnalysisHistory> history = analysisHistoryRepository.findByUserIdOrderByAnalysisDateDesc(userId);
+            return ResponseEntity.ok(history);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
     @PostMapping
-    public ResponseEntity<String> handleFileUpload(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<String> handleFileUpload(@RequestParam("file") MultipartFile file, 
+                                                  @RequestParam("userId") String userId) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("❌ No file uploaded");
         }
@@ -49,18 +89,32 @@ public class UploadController {
             // 2) collect .java files
             List<File> javaFiles = JavaFileCollector.collectJavaFiles(targetDir);
 
-            // 3) run first five detectors only
+            // 3) run advanced detectors with sophisticated algorithms
             List<String> allIssues = new ArrayList<>();
+            LongMethodDetector longMethodDetector = new LongMethodDetector();
+            LongParameterListDetector longParamDetector = new LongParameterListDetector();
+            MagicNumberDetector magicNumberDetector = new MagicNumberDetector();
+            EmptyCatchDetector emptyCatchDetector = new EmptyCatchDetector();
+            LongIdentifierDetector longIdDetector = new LongIdentifierDetector();
+            CodeDuplicationDetector duplicationDetector = new CodeDuplicationDetector();
+            GodClassDetector godClassDetector = new GodClassDetector();
+            
             for (File f : javaFiles) {
                 try {
-                    allIssues.addAll(LongMethodDetector.detect(f));
-                    allIssues.addAll(LongParameterListDetector.detect(f));
-                    allIssues.addAll(MagicNumberDetector.detect(f));
-                    allIssues.addAll(EmptyCatchDetector.detect(f));
-                    allIssues.addAll(LongIdentifierDetector.detect(f));
+                    CompilationUnit cu = StaticJavaParser.parse(f);
+                    
+                    // Advanced algorithm-based detection
+                    allIssues.addAll(longMethodDetector.detect(cu));
+                    allIssues.addAll(longParamDetector.detect(cu));
+                    allIssues.addAll(magicNumberDetector.detect(cu));
+                    allIssues.addAll(emptyCatchDetector.detect(cu));
+                    allIssues.addAll(longIdDetector.detect(cu));
+                    allIssues.addAll(duplicationDetector.detect(cu));
+                    allIssues.addAll(godClassDetector.detect(cu));
+                    
                 } catch (Exception ex) {
                     // ensure one file failure doesn't break whole flow
-                    allIssues.add(String.format("Error analyzing %s: %s", f.getName(), ex.getMessage()));
+                    allIssues.add(String.format("⚠️ Error analyzing %s: %s", f.getName(), ex.getMessage()));
                     ex.printStackTrace();
                 }
             }
@@ -68,7 +122,16 @@ public class UploadController {
             // 4) generate report
             String reportPath = ReportGenerator.generateTextReport(allIssues, targetDir);
             
-            // 5) get AI analysis
+            // 5) save analysis to history
+            int criticalCount = (int) allIssues.stream().filter(issue -> issue.contains("🔴")).count();
+            int warningCount = (int) allIssues.stream().filter(issue -> issue.contains("🟡")).count();
+            int suggestionCount = (int) allIssues.stream().filter(issue -> issue.contains("🟠")).count();
+            
+            AnalysisHistory history = new AnalysisHistory(userId, originalFileName, reportPath, 
+                                                         allIssues.size(), criticalCount, warningCount, suggestionCount);
+            analysisHistoryRepository.save(history);
+            
+            // 6) get AI analysis
             String aiStatus = "Failed";
             try {
                 String reportContent = ReportGenerator.readReportContent(reportPath);
@@ -86,10 +149,10 @@ public class UploadController {
                 System.err.println("AI analysis failed: " + aiEx.getMessage());
             }
 
-            // 6) response summary
+            // 7) response summary with report path
             String reportFileName = new File(reportPath).getName();
-            String summary = String.format("✅ Analysis complete!\n📂 Extracted to: %s\n📄 Java files: %d\n📝 Report: %s\n🔍 Issues found: %d\n🤖 AI analysis: %s",
-                    targetDir, javaFiles.size(), reportFileName, allIssues.size(), aiStatus);
+            String summary = String.format("✅ Advanced Analysis Complete!\n📂 Extracted to: %s\n📄 Java files: %d\n📝 Report: %s\n🔍 Issues detected: %d\n🤖 AI analysis: %s\n🧠 Advanced algorithms: Cyclomatic complexity, Cognitive complexity, Semantic analysis, Pattern recognition\n📋 Report path: %s",
+                    targetDir, javaFiles.size(), reportFileName, allIssues.size(), aiStatus, reportPath);
 
             return ResponseEntity.ok(summary);
 

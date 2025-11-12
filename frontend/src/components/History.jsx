@@ -16,22 +16,21 @@ export function History({ isOpen, onClose, isDarkMode }) {
 
   const fetchHistory = async () => {
     try {
-      console.log('Fetching history...');
-      const response = await api.get('/history');
-      console.log('History response:', response.data);
+      const userId = localStorage.getItem('userId') || 'anonymous';
+      const response = await api.get(`/upload/history?userId=${userId}`);
       setHistory(response.data);
     } catch (error) {
       console.error('Failed to fetch history:', error);
-      console.error('Error details:', error.response?.data);
     }
   };
 
-  const handleReportClick = async (folderName) => {
+  const handleReportClick = async (reportPath) => {
     setLoading(true);
     try {
-      const response = await api.get(`/history/report/${folderName}`);
+      const userId = localStorage.getItem('userId') || 'anonymous';
+      const response = await api.get(`/upload/report?path=${encodeURIComponent(reportPath)}&userId=${userId}`);
       setReportContent(response.data);
-      setSelectedReport(folderName);
+      setSelectedReport(reportPath);
     } catch (error) {
       console.error('Failed to fetch report:', error);
     } finally {
@@ -84,9 +83,9 @@ export function History({ isOpen, onClose, isDarkMode }) {
               history.map((item, index) => (
                 <div
                   key={index}
-                  onClick={() => handleReportClick(item.folderName)}
+                  onClick={() => handleReportClick(item.reportPath)}
                   className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                    selectedReport === item.folderName
+                    selectedReport === item.reportPath
                       ? isDarkMode 
                         ? 'bg-blue-600/20 border border-blue-500/30'
                         : 'bg-blue-50 border border-blue-200'
@@ -103,20 +102,19 @@ export function History({ isOpen, onClose, isDarkMode }) {
                       <p className={`font-medium truncate ${
                         isDarkMode ? 'text-gray-200' : 'text-gray-900'
                       }`}>
-                        {item.folderName}
+                        {item.projectName}
                       </p>
-                      {item.reportFile && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <FileText className={`h-3 w-3 ${
-                            isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                          }`} />
-                          <span className={`text-xs ${
-                            isDarkMode ? 'text-gray-400' : 'text-gray-500'
-                          }`}>
-                            {item.reportFile}
-                          </span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-4 mt-1 text-xs">
+                        <span className={`${
+                          isDarkMode ? 'text-red-400' : 'text-red-600'
+                        }`}>🔴 {item.criticalIssues}</span>
+                        <span className={`${
+                          isDarkMode ? 'text-yellow-400' : 'text-yellow-600'
+                        }`}>🟡 {item.warnings}</span>
+                        <span className={`${
+                          isDarkMode ? 'text-orange-400' : 'text-orange-600'
+                        }`}>🟠 {item.suggestions}</span>
+                      </div>
                       <div className="flex items-center gap-1 mt-1">
                         <Clock className={`h-3 w-3 ${
                           isDarkMode ? 'text-gray-500' : 'text-gray-400'
@@ -124,7 +122,7 @@ export function History({ isOpen, onClose, isDarkMode }) {
                         <span className={`text-xs ${
                           isDarkMode ? 'text-gray-500' : 'text-gray-400'
                         }`}>
-                          {formatDate(item.lastModified)}
+                          {new Date(item.analysisDate).toLocaleString()}
                         </span>
                       </div>
                     </div>
