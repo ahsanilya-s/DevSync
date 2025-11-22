@@ -1,0 +1,78 @@
+package com.devsync.model;
+
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "analysis_history")
+public class AnalysisHistory {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @Column(nullable = false)
+    private String userId;
+    
+    @Column(nullable = false)
+    private String projectName;
+    
+    @Column(nullable = false)
+    private String reportPath;
+    
+    @Column(nullable = false)
+    private LocalDateTime analysisDate;
+    
+    @Column(nullable = false)
+    private Integer totalIssues;
+    
+    @Column(nullable = false)
+    private Integer criticalIssues;
+    
+    @Column(nullable = false)
+    private Integer warnings;
+    
+    @Column(nullable = false)
+    private Integer suggestions;
+
+    public AnalysisHistory() {}
+
+    public AnalysisHistory(String userId, String projectName, String reportPath, 
+                          Integer totalIssues, Integer criticalIssues, Integer warnings, Integer suggestions) {
+        this.userId = userId;
+        this.projectName = projectName;
+        this.reportPath = reportPath;
+        this.analysisDate = LocalDateTime.now();
+        this.totalIssues = totalIssues;
+        this.criticalIssues = criticalIssues;
+        this.warnings = warnings;
+        this.suggestions = suggestions;
+    }
+
+    // Getters and Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
+    
+    public String getProjectName() { return projectName; }
+    public void setProjectName(String projectName) { this.projectName = projectName; }
+    
+    public String getReportPath() { return reportPath; }
+    public void setReportPath(String reportPath) { this.reportPath = reportPath; }
+    
+    public LocalDateTime getAnalysisDate() { return analysisDate; }
+    public void setAnalysisDate(LocalDateTime analysisDate) { this.analysisDate = analysisDate; }
+    
+    public Integer getTotalIssues() { return totalIssues; }
+    public void setTotalIssues(Integer totalIssues) { this.totalIssues = totalIssues; }
+    
+    public Integer getCriticalIssues() { return criticalIssues; }
+    public void setCriticalIssues(Integer criticalIssues) { this.criticalIssues = criticalIssues; }
+    
+    public Integer getWarnings() { return warnings; }
+    public void setWarnings(Integer warnings) { this.warnings = warnings; }
+    
+    public Integer getSuggestions() { return suggestions; }
+    public void setSuggestions(Integer suggestions) { this.suggestions = suggestions; }
+}

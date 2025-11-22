@@ -1,29 +1,55 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
 import { Toaster } from './components/ui/sonner'
-import { toast } from 'sonner'
-import api from './api'
+import { Card } from './components/ui/card'
+import { Sun, Moon } from 'lucide-react'
 
 // Import existing pages
 import Home from './pages/Home'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
+import AdminPanel from './pages/AdminPanel'
+import AdminLogin from './pages/AdminLogin'
+import Dashboard from './pages/Dashboard'
 
 // Import new UI components
 import { Button } from './components/ui/button'
-import { Input } from './components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
-import { Sun, Moon } from 'lucide-react'
 
 // Landing Page Component with Backend Integration
-function LandingPage({ onLogin, onSignup }) {
-  const [isDarkMode, setIsDarkMode] = useState(true)
-  const [showLearnMore, setShowLearnMore] = useState(false)
+function LandingPage({ onLogin, onSignup, isDarkMode, setIsDarkMode }) {
+
+  useEffect(() => {
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-in-view')
+        }
+      })
+    }, observerOptions)
+
+    const animateElements = document.querySelectorAll('.animate-on-scroll')
+    animateElements.forEach(el => observer.observe(el))
+
+    return () => observer.disconnect()
+  }, [])
 
   const handleToggleTheme = () => {
     setIsDarkMode(!isDarkMode)
   }
 
   const handleLearnMore = () => {
-    setShowLearnMore(true)
+    const targetSection = document.getElementById('code-smell-section')
+    if (targetSection) {
+      targetSection.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      })
+    }
   }
 
   return (
@@ -47,25 +73,18 @@ function LandingPage({ onLogin, onSignup }) {
         {/* Header */}
         <header className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-all duration-500 ${
           isDarkMode 
-            ? 'bg-gray-900/80 border-purple-500/30' 
-            : 'bg-white/80 border-gray-200'
+            ? 'bg-gray-900/80 border-purple-500/30'
+            : 'bg-white/80 border-gray-200' 
         }`}>
           <div className="container mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               {/* Logo */}
-              <div className="flex items-center gap-2">
-                <div className={`transition-colors duration-500 ${
-                  isDarkMode ? 'text-blue-400' : 'text-blue-600'
-                }`}>
-                  <span className="text-2xl">{'{'}</span>
-                  <span className="mx-1">D</span>
-                  <span className="text-2xl">{'}'}</span>
-                </div>
-                <span className={`transition-colors duration-500 ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>
-                  evSync
-                </span>
+              <div className="flex items-center ml-4">
+                <img 
+                  src={isDarkMode ? "/logo_for_blacktheme.png" : "/logo_for_whitetheme.png"} 
+                  alt="DevSync" 
+                  className="h-10 w-auto transition-opacity duration-500" 
+                />
               </div>
 
               {/* Right Side Buttons */}
@@ -80,7 +99,7 @@ function LandingPage({ onLogin, onSignup }) {
                       : 'border-gray-300 text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  {isDarkMode ? <Sun className="h-4 w-4 mr-2" /> : <Moon className="h-4 w-4 mr-2" />}
+                  {isDarkMode ? <Moon className="h-4 w-4 mr-2" /> : <Sun className="h-4 w-4 mr-2" />}
                   Toggle Color Mode
                 </Button>
                 
@@ -105,36 +124,52 @@ function LandingPage({ onLogin, onSignup }) {
                 >
                   Login
                 </Button>
+                
+                <Button
+                  onClick={() => window.location.href = '/admin/login'}
+                  variant="outline"
+                  className={`transition-all duration-500 ${
+                    isDarkMode
+                      ? 'border-orange-500/50 text-orange-300 hover:bg-orange-500/10 hover:text-orange-200'
+                      : 'border-orange-300 text-orange-700 hover:bg-orange-100'
+                  }`}
+                >
+                  Admin Panel
+                </Button>
               </div>
             </div>
           </div>
         </header>
 
         {/* Hero Section */}
-        <section className="py-20 px-6">
-          <div className="container mx-auto text-center">
-            <h1 className={`text-6xl font-semibold mb-8 transition-colors duration-500 ${
-              isDarkMode ? 'text-white' : 'text-gray-900'
-            }`}>
-              Sync Your Development
-              <br />
-              <span className={`bg-gradient-to-r bg-clip-text text-transparent transition-all duration-500 ${
-                isDarkMode
-                  ? 'from-blue-400 to-purple-400'
-                  : 'from-blue-600 to-purple-600'
+        <section className="py-24 px-6 overflow-hidden">
+          <div className="container mx-auto max-w-6xl text-center">
+            <div className="animate-fade-in-up">
+              <h1 className={`text-6xl font-semibold mb-8 transition-colors duration-500 ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
               }`}>
-                Workflow
-              </span>
-            </h1>
+                Eliminate Java
+                <br />
+                <span className={`bg-gradient-to-r bg-clip-text text-transparent transition-all duration-500 ${
+                  isDarkMode
+                    ? 'from-blue-400 to-purple-400'
+                    : 'from-blue-600 to-purple-600'
+                }`}>
+                  Code Smells
+                </span>
+              </h1>
+            </div>
             
-            <p className={`text-xl mb-16 max-w-3xl mx-auto transition-colors duration-500 ${
-              isDarkMode ? 'text-gray-300' : 'text-gray-600'
-            }`}>
-              DevSync helps development teams collaborate seamlessly with intelligent code analysis, 
-              real-time synchronization, and powerful project management tools.
-            </p>
+            <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+              <p className={`text-xl mb-16 max-w-3xl mx-auto transition-colors duration-500 ${
+                isDarkMode ? 'text-gray-300' : 'text-gray-600'
+              }`}>
+                Advanced AST-based analysis to detect code smells in Java projects with AI-powered 
+                recommendations for enhanced code quality and maintainability.
+              </p>
+            </div>
 
-            <div className="flex gap-4 justify-center">
+            <div className="animate-fade-in-up flex gap-4 justify-center" style={{ animationDelay: '0.4s' }}>
               <Button
                 onClick={onLogin}
                 size="lg"
@@ -144,7 +179,7 @@ function LandingPage({ onLogin, onSignup }) {
                     : 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-lg'
                 }`}
               >
-                Get Started
+                Analyze Your Code
               </Button>
               
               <Button
@@ -163,26 +198,158 @@ function LandingPage({ onLogin, onSignup }) {
           </div>
         </section>
 
-        {/* Learn More Section */}
-        {showLearnMore && (
-          <>
-            {/* Features Section */}
-            <section className="py-20 px-6">
-              <div className="container mx-auto">
-                <h2 className={`text-4xl font-semibold text-center mb-16 ${
+        {/* Code Smell Detection Section */}
+        <section id="code-smell-section" className={`py-24 px-6 ${
+          isDarkMode ? 'bg-gray-900/30' : 'bg-gray-50/50'
+        }`}>
+          <div className="container mx-auto max-w-6xl">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+              <div className="animate-on-scroll animate-slide-in-left">
+                <h2 className={`text-4xl font-bold mb-6 ${
                   isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>Features</h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                }`}>Detect Code Smells with AST Analysis</h2>
+                <p className={`text-lg mb-8 ${
+                  isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                }`}>
+                  Our advanced Abstract Syntax Tree (AST) parser analyzes your Java codebase to identify 
+                  code smells, anti-patterns, and quality issues that impact maintainability.
+                </p>
+                <div className="space-y-4">
                   {[
-                    { title: 'Code Analysis', desc: 'Advanced static analysis to detect code smells and quality issues', icon: '🔍' },
-                    { title: 'Real-time Sync', desc: 'Seamless synchronization across your development team', icon: '🔄' },
-                    { title: 'Smart Reports', desc: 'Detailed reports with actionable insights and recommendations', icon: '📊' },
-                    { title: 'Team Collaboration', desc: 'Built-in tools for effective team communication and workflow', icon: '👥' },
-                    { title: 'Security Scanning', desc: 'Identify security vulnerabilities before they reach production', icon: '🛡️' },
-                    { title: 'Performance Metrics', desc: 'Track and optimize your codebase performance over time', icon: '⚡' }
+                    { icon: '🎯', title: 'Long Methods', desc: 'Identify overly complex methods that need refactoring' },
+                    { icon: '🔄', title: 'Duplicate Code', desc: 'Find repeated code blocks across your project' },
+                    { icon: '⚡', title: 'Performance Issues', desc: 'Detect inefficient algorithms and memory leaks' }
+                  ].map((item, index) => (
+                    <div key={index} className={`flex items-start gap-4 p-4 rounded-lg transition-all duration-300 hover:scale-105 ${
+                      isDarkMode ? 'bg-gray-800/30 hover:bg-gray-800/50' : 'bg-white/50 hover:bg-white/80'
+                    }`}>
+                      <span className="text-2xl">{item.icon}</span>
+                      <div>
+                        <h4 className={`font-semibold mb-1 ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}>{item.title}</h4>
+                        <p className={`text-sm ${
+                          isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                        }`}>{item.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="animate-on-scroll animate-slide-in-right">
+                <div className={`p-6 rounded-xl border transition-all duration-500 ${
+                  isDarkMode 
+                    ? 'bg-gray-800/50 border-gray-700 shadow-2xl shadow-purple-500/10'
+                    : 'bg-white border-gray-200 shadow-2xl shadow-blue-500/10'
+                }`}>
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className={`ml-2 text-sm ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}>CodeAnalyzer.java</span>
+                  </div>
+                  <div className={`font-mono text-sm space-y-2 ${
+                    isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
+                    <div className="text-red-400">// Code Smell Detected: Long Method</div>
+                    <div>public void processData() {'{'}</div>
+                    <div className="pl-4 text-yellow-400">⚠️ Method too long (150 lines)</div>
+                    <div className="pl-4 text-blue-400">💡 AI Suggestion: Extract methods</div>
+                    <div>{'}'}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* AI Enhancement Section */}
+        <section className="py-24 px-6">
+          <div className="container mx-auto max-w-6xl text-center">
+            <div className="animate-on-scroll animate-fade-in-up mb-16">
+              <h2 className={`text-4xl font-bold mb-6 ${
+                isDarkMode ? 'text-white' : 'text-gray-900'
+              }`}>AI-Powered Code Enhancement</h2>
+              <p className={`text-lg max-w-3xl mx-auto ${
+                isDarkMode ? 'text-gray-300' : 'text-gray-600'
+              }`}>
+                Get intelligent recommendations to improve your code quality, performance, and maintainability 
+                with our advanced AI analysis engine.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {[
+                { 
+                  icon: '🤖', 
+                  title: 'Smart Refactoring', 
+                  desc: 'AI suggests optimal refactoring patterns for cleaner code',
+                  color: 'blue'
+                },
+                { 
+                  icon: '📈', 
+                  title: 'Performance Optimization', 
+                  desc: 'Identify bottlenecks and get performance improvement tips',
+                  color: 'green'
+                },
+                { 
+                  icon: '🛡️', 
+                  title: 'Security Analysis', 
+                  desc: 'Detect security vulnerabilities and get fix recommendations',
+                  color: 'purple'
+                }
+              ].map((item, index) => (
+                <div key={index} className={`animate-on-scroll animate-fade-in-up p-6 rounded-xl transition-all duration-500 hover:scale-105 ${
+                  isDarkMode 
+                    ? 'bg-gray-800/50 border border-gray-700 hover:bg-gray-800/70'
+                    : 'bg-white border border-gray-200 shadow-lg hover:shadow-xl'
+                }`} style={{ animationDelay: `${index * 0.2}s` }}>
+                  <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center text-2xl ${
+                    item.color === 'blue' ? (isDarkMode ? 'bg-blue-600/20 text-blue-400' : 'bg-blue-100 text-blue-600') :
+                    item.color === 'green' ? (isDarkMode ? 'bg-green-600/20 text-green-400' : 'bg-green-100 text-green-600') :
+                    (isDarkMode ? 'bg-purple-600/20 text-purple-400' : 'bg-purple-100 text-purple-600')
+                  }`}>
+                    {item.icon}
+                  </div>
+                  <h3 className={`text-xl font-semibold mb-3 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>{item.title}</h3>
+                  <p className={`${
+                    isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                  }`}>{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+            <section className={`py-24 px-6 ${
+              isDarkMode ? 'bg-gray-900/20' : 'bg-blue-50/30'
+            }`}>
+              <div className="container mx-auto max-w-6xl">
+                <div className="animate-on-scroll text-center mb-16">
+                  <h2 className={`text-4xl font-bold mb-6 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>Comprehensive Analysis Features</h2>
+                  <p className={`text-lg max-w-3xl mx-auto ${
+                    isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                  }`}>
+                    Powerful tools designed specifically for Java developers to maintain code quality
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {[
+                    { title: 'AST Analysis', desc: 'Deep Abstract Syntax Tree parsing for comprehensive Java code analysis', icon: '🌳' },
+                    { title: 'Code Smell Detection', desc: 'Identify anti-patterns, long methods, and duplicate code blocks', icon: '👃' },
+                    { title: 'AI Recommendations', desc: 'Get intelligent suggestions for code improvements and refactoring', icon: '🤖' },
+                    { title: 'Quality Metrics', desc: 'Comprehensive code quality scoring and maintainability index', icon: '📏' },
+                    { title: 'Vulnerability Scanning', desc: 'Detect security issues and potential exploits in your Java code', icon: '🔒' },
+                    { title: 'Performance Analysis', desc: 'Identify performance bottlenecks and optimization opportunities', icon: '⚡' }
                   ].map((feature, index) => (
-                    <Card key={index} className={`p-6 text-center transition-all duration-500 hover:scale-105 ${
+                    <Card key={index} className={`animate-fade-in-up p-6 text-center transition-all duration-500 hover:scale-105 ${
                       isDarkMode 
                         ? 'bg-gray-800/50 border-gray-700 hover:bg-gray-800/70'
                         : 'bg-white/90 border-blue-100 shadow-lg hover:shadow-xl'
@@ -201,31 +368,40 @@ function LandingPage({ onLogin, onSignup }) {
             </section>
 
             {/* How to Use Section */}
-            <section className={`py-20 px-6 ${
+            <section className={`py-24 px-6 ${
               isDarkMode ? 'bg-gray-900/50' : 'bg-blue-50/50'
             }`}>
-              <div className="container mx-auto">
-                <h2 className={`text-4xl font-semibold text-center mb-16 ${
-                  isDarkMode ? 'text-white' : 'text-gray-900'
-                }`}>How to Use DevSync</h2>
+              <div className="container mx-auto max-w-6xl">
+                <div className="animate-on-scroll text-center mb-16">
+                  <h2 className={`text-4xl font-bold mb-6 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>How to Use DevSync</h2>
+                  <p className={`text-lg max-w-3xl mx-auto ${
+                    isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                  }`}>
+                    Get started with Java code analysis in just a few simple steps
+                  </p>
+                </div>
                 
-                <div className="max-w-4xl mx-auto space-y-12">
+                <div className="max-w-4xl mx-auto space-y-16">
                   {[
                     { step: '1', title: 'Sign Up & Login', desc: 'Create your account and access the dashboard' },
                     { step: '2', title: 'Upload Project', desc: 'Upload your Java project as a ZIP file for analysis' },
                     { step: '3', title: 'Get Analysis', desc: 'Receive detailed reports on code quality and issues' },
                     { step: '4', title: 'Collaborate', desc: 'Share results with your team and track improvements' }
                   ].map((item, index) => (
-                    <div key={index} className="flex items-center gap-8">
-                      <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold ${
+                    <div key={index} className={`animate-on-scroll flex items-center gap-12 ${
+                      index % 2 === 1 ? 'flex-row-reverse' : ''
+                    }`}>
+                      <div className={`w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold shadow-lg ${
                         isDarkMode 
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-blue-500 text-white'
+                          ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-blue-500/30'
+                          : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-blue-500/30'
                       }`}>
                         {item.step}
                       </div>
-                      <div>
-                        <h3 className={`text-2xl font-semibold mb-2 ${
+                      <div className="flex-1">
+                        <h3 className={`text-2xl font-semibold mb-3 ${
                           isDarkMode ? 'text-white' : 'text-gray-900'
                         }`}>{item.title}</h3>
                         <p className={`text-lg ${
@@ -239,25 +415,20 @@ function LandingPage({ onLogin, onSignup }) {
             </section>
 
             {/* Footer */}
-            <footer className={`py-12 px-6 border-t ${
+            <footer className={`py-16 px-6 border-t ${
               isDarkMode 
                 ? 'bg-gray-900 border-gray-800'
                 : 'bg-white border-gray-200'
             }`}>
-              <div className="container mx-auto">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              <div className="container mx-auto max-w-6xl px-8">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
                   <div>
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className={`${
-                        isDarkMode ? 'text-blue-400' : 'text-blue-600'
-                      }`}>
-                        <span className="text-2xl">{'{'}</span>
-                        <span className="mx-1">D</span>
-                        <span className="text-2xl">{'}'}</span>
-                      </div>
-                      <span className={`font-semibold ${
-                        isDarkMode ? 'text-white' : 'text-gray-900'
-                      }`}>DevSync</span>
+                    <div className="flex items-center mb-4">
+                      <img 
+                        src={isDarkMode ? "/logo_for_blacktheme.png" : "/logo_for_whitetheme.png"} 
+                        alt="DevSync" 
+                        className="h-8 w-auto transition-opacity duration-500" 
+                      />
                     </div>
                     <p className={`${
                       isDarkMode ? 'text-gray-400' : 'text-gray-600'
@@ -266,7 +437,7 @@ function LandingPage({ onLogin, onSignup }) {
                   
                   <div>
                     <h4 className={`font-semibold mb-4 ${
-                      isDarkMode ? 'text-white' : 'text-gray-900'
+                      isDarkMode ? 'text-gray-100' : 'text-gray-900'
                     }`}>Product</h4>
                     <ul className={`space-y-2 ${
                       isDarkMode ? 'text-gray-400' : 'text-gray-600'
@@ -279,7 +450,7 @@ function LandingPage({ onLogin, onSignup }) {
                   
                   <div>
                     <h4 className={`font-semibold mb-4 ${
-                      isDarkMode ? 'text-white' : 'text-gray-900'
+                      isDarkMode ? 'text-gray-100' : 'text-gray-900'
                     }`}>Company</h4>
                     <ul className={`space-y-2 ${
                       isDarkMode ? 'text-gray-400' : 'text-gray-600'
@@ -292,7 +463,7 @@ function LandingPage({ onLogin, onSignup }) {
                   
                   <div>
                     <h4 className={`font-semibold mb-4 ${
-                      isDarkMode ? 'text-white' : 'text-gray-900'
+                      isDarkMode ? 'text-gray-100' : 'text-gray-900'
                     }`}>Connect</h4>
                     <div className="flex gap-4">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
@@ -308,248 +479,63 @@ function LandingPage({ onLogin, onSignup }) {
                   </div>
                 </div>
                 
-                <div className={`mt-8 pt-8 border-t text-center ${
+                <div className={`mt-12 pt-8 border-t text-center ${
                   isDarkMode 
-                    ? 'border-gray-800 text-gray-500'
+                    ? 'border-gray-700 text-gray-500'
                     : 'border-gray-200 text-gray-500'
                 }`}>
-                  <p>© 2025 DevSync. All rights reserved.</p>
+                  <p className="text-lg">© 2025 DevSync. All rights reserved.</p>
                 </div>
               </div>
             </footer>
-          </>
-        )}
       </div>
     </div>
   )
 }
 
-// Login Modal Component
-function LoginModal({ isOpen, onClose, onSuccess }) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
 
-  const handleLogin = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
-    
-    try {
-      const res = await api.post('/auth/login', { email, password })
-      toast.success('Login successful!')
-      onSuccess()
-      onClose()
-    } catch (error) {
-      toast.error('Invalid credentials')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  if (!isOpen) return null
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-gray-900 border-gray-700">
-        <CardHeader>
-          <CardTitle className="text-white">Login to DevSync</CardTitle>
-          <CardDescription className="text-gray-400">
-            Enter your credentials to access your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <Input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="bg-gray-800 border-gray-600 text-white"
-              />
-            </div>
-            <div>
-              <Input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="bg-gray-800 border-gray-600 text-white"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
-              >
-                {isLoading ? 'Logging in...' : 'Login'}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                className="border-gray-600 text-gray-300 hover:bg-gray-800"
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-// Signup Modal Component
-function SignupModal({ isOpen, onClose, onSuccess }) {
-  const [username, setUsername] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-
-  const handleSignup = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
-    
-    try {
-      const res = await api.post('/auth/signup', { username, email, password })
-      toast.success('Account created successfully!')
-      onSuccess()
-      onClose()
-    } catch (error) {
-      toast.error('Error creating account: ' + (error.response?.data || error.message))
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  if (!isOpen) return null
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-gray-900 border-gray-700">
-        <CardHeader>
-          <CardTitle className="text-white">Sign Up for DevSync</CardTitle>
-          <CardDescription className="text-gray-400">
-            Create your account to get started
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSignup} className="space-y-4">
-            <div>
-              <Input
-                type="text"
-                placeholder="Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                className="bg-gray-800 border-gray-600 text-white"
-              />
-            </div>
-            <div>
-              <Input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="bg-gray-800 border-gray-600 text-white"
-              />
-            </div>
-            <div>
-              <Input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="bg-gray-800 border-gray-600 text-white"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
-              >
-                {isLoading ? 'Creating Account...' : 'Sign Up'}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                className="border-gray-600 text-gray-300 hover:bg-gray-800"
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [showLoginModal, setShowLoginModal] = useState(false)
-  const [showSignupModal, setShowSignupModal] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(false)
   const navigate = useNavigate()
 
   const handleLogin = () => {
-    setShowLoginModal(true)
+    navigate('/login')
   }
 
   const handleSignup = () => {
-    setShowSignupModal(true)
-  }
-
-  const handleLoginSuccess = () => {
-    setIsLoggedIn(true)
-    toast.success('Welcome to DevSync!')
-  }
-
-  const handleSignupSuccess = () => {
-    setShowSignupModal(false)
-    setShowLoginModal(true)
-    toast.success('Account created! Please login.')
-  }
-
-  if (!isLoggedIn) {
-    return (
-      <>
-        <LandingPage onLogin={handleLogin} onSignup={handleSignup} />
-        <LoginModal 
-          isOpen={showLoginModal} 
-          onClose={() => setShowLoginModal(false)}
-          onSuccess={handleLoginSuccess}
-        />
-        <SignupModal 
-          isOpen={showSignupModal} 
-          onClose={() => setShowSignupModal(false)}
-          onSuccess={handleSignupSuccess}
-        />
-        <Toaster
-          position="bottom-right"
-          toastOptions={{
-            style: {
-              background: "#1f2937",
-              border: "1px solid #374151",
-              color: "#f3f4f6",
-            },
-          }}
-        />
-      </>
-    )
+    navigate('/signup')
   }
 
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/home" element={<Home />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/" element={
+          <LandingPage 
+            onLogin={handleLogin} 
+            onSignup={handleSignup}
+            isDarkMode={isDarkMode}
+            setIsDarkMode={setIsDarkMode}
+          />
+        } />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/admin/dashboard" element={<AdminPanel />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Routes>
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          style: {
+            background: isDarkMode ? "#1f2937" : "#ffffff",
+            border: isDarkMode ? "1px solid #374151" : "1px solid #e5e7eb",
+            color: isDarkMode ? "#f3f4f6" : "#1f2937",
+          },
+        }}
+      />
+    </>
   )
 }

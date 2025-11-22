@@ -1,55 +1,204 @@
 package com.devsync.detectors;
 
-import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.expr.DoubleLiteralExpr;
-import com.github.javaparser.ast.expr.IntegerLiteralExpr;
-import com.github.javaparser.ast.expr.LongLiteralExpr;
-import com.github.javaparser.ast.expr.StringLiteralExpr;
-import com.github.javaparser.ast.nodeTypes.NodeWithRange;
-
-import java.io.File;
+import com.github.javaparser.ast.expr.*;
+import com.github.javaparser.ast.body.*;
+import com.github.javaparser.ast.stmt.*;
+import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class MagicNumberDetector {
+    
+    private static final Set<String> ACCEPTABLE_NUMBERS = Set.of(
+        "0", "1", "-1", "0.0", "1.0", "-1.0", "2", "100", "1000"
+    );
+    
+    private static final Set<String> SAFE_CONTEXTS = Set.of(
+        "test", "constant", "final", "static"
+    );
 
-    // Allowed trivial numbers (0,1,-1) and counts for reuse
-    private static final Set<String> ALLOWED = Set.of("0", "1", "-1");
-    private static final int REUSE_THRESHOLD = 2; // repeated occurrences considered suspicious
-
-    public static List<String> detect(File file) {
+    public List<String> detect(CompilationUnit cu) {
         List<String> issues = new ArrayList<>();
-        try {
-            CompilationUnit cu = StaticJavaParser.parse(file);
-
-            // Collect numeric and string literals with their textual value
-            List<String> literals = new ArrayList<>();
-
-            cu.findAll(IntegerLiteralExpr.class).forEach(n -> literals.add(n.getValue()));
-            cu.findAll(LongLiteralExpr.class).forEach(n -> literals.add(n.getValue().replaceAll("[lL]$", "")));
-            cu.findAll(DoubleLiteralExpr.class).forEach(n -> literals.add(n.getValue().replaceAll("[dD]$", "")));
-            cu.findAll(StringLiteralExpr.class).forEach(n -> literals.add("\"" + n.getValue() + "\""));
-
-            // Filter out allowed values (0,1,-1) and very short strings like empty string maybe allowed?
-            List<String> suspect = literals.stream()
-                    .filter(l -> !ALLOWED.contains(l))
-                    .collect(Collectors.toList());
-
-            // Count reuse
-            Map<String, Long> counts = suspect.stream()
-                    .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
-
-            // Report any literal that appears and is not obviously a constant
-            counts.forEach((lit, cnt) -> {
-                if (cnt >= 1) { // any unexplained literal is flagged
-                    issues.add(String.format("Magic Literal in %s: value=%s, occurrences=%d", file.getName(), lit, cnt));
-                }
-            });
-
-        } catch (Exception e) {
-            issues.add("Error parsing for MagicNumberDetector: " + e.getMessage());
+        
+        MagicNumberAnalyzer analyzer = new MagicNumberAnalyzer();
+        cu.accept(analyzer, null);
+        
+        for (MagicNumberInfo magicInfo : analyzer.getMagicNumbers()) {
+            if (shouldReport(magicInfo)) {
+                double riskScore = calculateRiskScore(magicInfo);
+                String severity = getSeverity(riskScore);
+                
+                issues.add(String.format(
+                    "%s [MagicNumber] %s:%d - Magic number '%s' in %s - %s | Suggestions: %s",
+                    severity,
+                    magicInfo.fileName,
+                    magicInfo.lineNumber,
+                    magicInfo.value,
+                    magicInfo.context,
+                    generateAnalysis(magicInfo),
+                    generateSuggestions(magicInfo)
+                ));
+            }
         }
+        
         return issues;
+    }
+    
+    private boolean shouldReport(MagicNumberInfo magicInfo) {
+        if (ACCEPTABLE_NUMBERS.contains(magicInfo.value)) {
+            return false;
+        }
+        
+        if (magicInfo.isInTestMethod || magicInfo.isConstant) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    private double calculateRiskScore(MagicNumberInfo magicInfo) {
+        double score = 0.6;
+        
+        // Context scoring
+        if (magicInfo.isInPublicMethod) score += 0.2;
+        if (magicInfo.isInBusinessLogic) score += 0.3;
+        if (magicInfo.isRepeated) score += 0.2;
+        
+        // Value analysis
+        try {
+            double numValue = Double.parseDouble(magicInfo.value);
+            if (Math.abs(numValue) > 1000) score += 0.1;
+            if (numValue % 1 != 0 && Math.abs(numValue) > 1) score += 0.1; // Decimal
+        } catch (NumberFormatException e) {
+            // Ignore
+        }
+        
+        return Math.min(1.0, score);
+    }
+    
+    private String getSeverity(double score) {
+        if (score >= 0.8) return "🔴";
+        if (score >= 0.6) return "🟡";
+        return "🟠";
+    }
+    
+    private String generateAnalysis(MagicNumberInfo magicInfo) {
+        List<String> issues = new ArrayList<>();
+        
+        if (magicInfo.isRepeated) {
+            issues.add("Repeated magic number");
+        }
+        
+        if (magicInfo.isInBusinessLogic) {
+            issues.add("Business logic constant");
+        }
+        
+        if (magicInfo.isInPublicMethod) {
+            issues.add("Public API magic number");
+        }
+        
+        return issues.isEmpty() ? "Hardcoded numeric literal" : String.join(", ", issues);
+    }
+    
+    private String generateSuggestions(MagicNumberInfo magicInfo) {
+        return "Extract to named constant, use enum for discrete values, document meaning";
+    }
+    
+    private static class MagicNumberInfo {
+        String fileName;
+        String value;
+        int lineNumber;
+        String context;
+        boolean isInTestMethod;
+        boolean isInPublicMethod;
+        boolean isInBusinessLogic;
+        boolean isConstant;
+        boolean isRepeated;
+        String methodName;
+    }
+    
+    private static class MagicNumberAnalyzer extends VoidVisitorAdapter<Void> {
+        private final List<MagicNumberInfo> magicNumbers = new ArrayList<>();
+        private final Map<String, Integer> numberCounts = new HashMap<>();
+        private String fileName = "";
+        private String currentMethodName = "";
+        private boolean inTestMethod = false;
+        private boolean inPublicMethod = false;
+        
+        public List<MagicNumberInfo> getMagicNumbers() {
+            // Mark repeated numbers
+            for (MagicNumberInfo info : magicNumbers) {
+                info.isRepeated = numberCounts.getOrDefault(info.value, 0) > 1;
+            }
+            return magicNumbers;
+        }
+        
+        @Override
+        public void visit(CompilationUnit n, Void arg) {
+            fileName = n.getStorage().map(s -> s.getFileName()).orElse("UnknownFile");
+            super.visit(n, arg);
+        }
+        
+        @Override
+        public void visit(MethodDeclaration n, Void arg) {
+            currentMethodName = n.getNameAsString();
+            inTestMethod = n.getNameAsString().toLowerCase().startsWith("test");
+            inPublicMethod = n.isPublic();
+            super.visit(n, arg);
+        }
+        
+        @Override
+        public void visit(FieldDeclaration n, Void arg) {
+            // Skip constants
+            if (n.isFinal() && n.isStatic()) {
+                return;
+            }
+            super.visit(n, arg);
+        }
+        
+        @Override
+        public void visit(IntegerLiteralExpr n, Void arg) {
+            addMagicNumber(n.getValue(), n.getBegin().map(pos -> pos.line).orElse(0));
+            super.visit(n, arg);
+        }
+        
+        @Override
+        public void visit(DoubleLiteralExpr n, Void arg) {
+            addMagicNumber(n.getValue(), n.getBegin().map(pos -> pos.line).orElse(0));
+            super.visit(n, arg);
+        }
+        
+        @Override
+        public void visit(LongLiteralExpr n, Void arg) {
+            addMagicNumber(n.getValue(), n.getBegin().map(pos -> pos.line).orElse(0));
+            super.visit(n, arg);
+        }
+        
+        private void addMagicNumber(String value, int lineNumber) {
+            MagicNumberInfo info = new MagicNumberInfo();
+            info.fileName = fileName;
+            info.value = value;
+            info.lineNumber = lineNumber;
+            info.context = determineContext();
+            info.isInTestMethod = inTestMethod;
+            info.isInPublicMethod = inPublicMethod;
+            info.isInBusinessLogic = isBusinessLogicContext();
+            info.methodName = currentMethodName;
+            
+            magicNumbers.add(info);
+            numberCounts.merge(value, 1, Integer::sum);
+        }
+        
+        private String determineContext() {
+            if (inTestMethod) return "test method";
+            if (inPublicMethod) return "public method";
+            return "method";
+        }
+        
+        private boolean isBusinessLogicContext() {
+            String method = currentMethodName.toLowerCase();
+            return method.contains("calculate") || method.contains("compute") || 
+                   method.contains("process") || method.contains("validate");
+        }
     }
 }

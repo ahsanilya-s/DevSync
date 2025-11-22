@@ -3,7 +3,7 @@ import { Upload, FileArchive } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 
-export function UploadArea({ onAnalyze, isDarkMode }) {
+export function UploadArea({ onAnalyze, onVisualReport, isDarkMode }) {
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
 
@@ -35,6 +35,12 @@ export function UploadArea({ onAnalyze, isDarkMode }) {
   const handleAnalyze = () => {
     if (selectedFile) {
       onAnalyze(selectedFile);
+    }
+  };
+
+  const handleVisualReport = () => {
+    if (selectedFile) {
+      onVisualReport(selectedFile);
     }
   };
 
@@ -112,17 +118,31 @@ export function UploadArea({ onAnalyze, isDarkMode }) {
             </div>
           </div>
 
-          <Button
-            onClick={handleAnalyze}
-            disabled={!selectedFile}
-            className={`w-full py-6 bg-gradient-to-r text-white shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
-              isDarkMode
-                ? 'from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-blue-500/30 hover:shadow-blue-500/50'
-                : 'from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-blue-400/40 hover:shadow-blue-500/60'
-            }`}
-          >
-            <span className="text-lg font-semibold">Analyze Project</span>
-          </Button>
+          <div className="space-y-4">
+            <Button
+              onClick={handleAnalyze}
+              disabled={!selectedFile}
+              className={`w-full py-6 bg-gradient-to-r text-white shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                isDarkMode
+                  ? 'from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-blue-500/30 hover:shadow-blue-500/50'
+                  : 'from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-blue-400/40 hover:shadow-blue-500/60'
+              }`}
+            >
+              <span className="text-lg font-semibold">Analyze Project</span>
+            </Button>
+            
+            <Button
+              onClick={handleVisualReport}
+              disabled={!selectedFile}
+              className={`w-full py-4 bg-gradient-to-r text-white shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                isDarkMode
+                  ? 'from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-purple-500/30 hover:shadow-purple-500/50'
+                  : 'from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-purple-400/40 hover:shadow-purple-500/60'
+              }`}
+            >
+              <span className="text-base font-semibold">Generate Visual Architecture Report</span>
+            </Button>
+          </div>
         </div>
       </Card>
     </div>

@@ -1,0 +1,136 @@
+.adminLoginPage {
+    min-height: 100vh;
+    background: linear-gradient(135deg, rgb(17, 24, 39) 0%, rgb(30, 58, 138) 50%, rgb(88, 28, 135) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.adminLoginCard {
+    width: 100%;
+    max-width: 28rem;
+    background-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.5rem;
+    padding: 0;
+}
+
+.adminLoginHeader {
+    text-align: center;
+    padding: 1.5rem 1.5rem 0;
+}
+
+.adminIconWrapper {
+    margin: 0 auto 1rem;
+    width: 4rem;
+    height: 4rem;
+    background-color: rgb(37, 99, 235);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.adminIcon {
+    height: 2rem;
+    width: 2rem;
+    color: white;
+}
+
+.adminLoginTitle {
+    font-size: 1.5rem;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.adminLoginSubtitle {
+    color: rgb(209, 213, 219);
+}
+
+.adminLoginContent {
+    padding: 1.5rem;
+}
+
+.adminLoginForm {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.adminInputField {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    width: 100%;
+}
+
+.adminInputField::placeholder {
+    color: rgb(156, 163, 175);
+}
+
+.adminInputField:focus {
+    outline: none;
+    border-color: rgb(59, 130, 246);
+}
+
+.passwordFieldWrapper {
+    position: relative;
+}
+
+.passwordToggleBtn {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: rgb(156, 163, 175);
+    cursor: pointer;
+}
+
+.passwordToggleBtn:hover {
+    color: white;
+}
+
+.passwordToggleIcon {
+    height: 1rem;
+    width: 1rem;
+}
+
+.adminSubmitBtn {
+    width: 100%;
+    background-color: rgb(37, 99, 235);
+    color: white;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.adminSubmitBtn:hover {
+    background-color: rgb(29, 78, 216);
+}
+
+.adminSubmitBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.adminCredentialsInfo {
+    margin-top: 1.5rem;
+    padding: 0.75rem;
+    background-color: rgba(30, 58, 138, 0.3);
+    border-radius: 0.5rem;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.adminCredentialsText {
+    font-size: 0.75rem;
+    color: rgb(191, 219, 254);
+    text-align: center;
+}

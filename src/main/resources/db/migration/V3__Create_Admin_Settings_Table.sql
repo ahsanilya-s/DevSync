@@ -1,0 +1,9 @@
+CREATE TABLE admin_settings (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    setting_key VARCHAR(255) NOT NULL UNIQUE,
+    setting_value TEXT,
+    description TEXT,
+    category VARCHAR(100) DEFAULT 'general',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

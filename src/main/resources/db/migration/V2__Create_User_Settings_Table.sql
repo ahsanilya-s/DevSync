@@ -1,0 +1,21 @@
+CREATE TABLE user_settings (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL,
+    max_method_length INT DEFAULT 50,
+    max_parameter_count INT DEFAULT 5,
+    max_identifier_length INT DEFAULT 30,
+    magic_number_threshold INT DEFAULT 3,
+    missing_default_enabled BOOLEAN DEFAULT TRUE,
+    empty_catch_enabled BOOLEAN DEFAULT TRUE,
+    long_method_enabled BOOLEAN DEFAULT TRUE,
+    long_parameter_enabled BOOLEAN DEFAULT TRUE,
+    magic_number_enabled BOOLEAN DEFAULT TRUE,
+    long_identifier_enabled BOOLEAN DEFAULT TRUE,
+    ai_provider VARCHAR(50) DEFAULT 'ollama',
+    ai_api_key TEXT,
+    ai_model VARCHAR(100) DEFAULT 'deepseek-coder:latest',
+    ai_enabled BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_user_settings (user_id)
+);

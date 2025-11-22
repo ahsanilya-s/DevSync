@@ -4,15 +4,23 @@ import com.devsync.utils.ZipExtractor;
 import com.devsync.utils.FolderNamingUtil;
 import com.devsync.analyzer.JavaFileCollector;
 import com.devsync.reports.ReportGenerator;
-import com.devsync.services.OllamaService;
+import com.devsync.services.AIAssistantService;
+import com.devsync.services.AdminSettingsService;
+import com.devsync.model.AnalysisHistory;
+import com.devsync.model.UserSettings;
+import com.devsync.repository.AnalysisHistoryRepository;
+import com.devsync.repository.UserSettingsRepository;
+import com.devsync.config.AnalysisConfig;
+import com.devsync.visual.*;
 
-import com.devsync.detectors.LongMethodDetector;
-import com.devsync.detectors.LongParameterListDetector;
-import com.devsync.detectors.MagicNumberDetector;
-import com.devsync.detectors.EmptyCatchDetector;
-import com.devsync.detectors.LongIdentifierDetector;
+import com.devsync.analyzer.CodeAnalysisEngine;
+
+import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.ast.CompilationUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,73 +31,221 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/api/upload")
+@CrossOrigin(origins = "*")
 public class UploadController {
 
     @Autowired
-    private OllamaService ollamaService;
+    private AIAssistantService aiAssistantService;
+    
+    @Autowired
+    private AnalysisHistoryRepository analysisHistoryRepository;
+    
+    @Autowired
+    private UserSettingsRepository userSettingsRepository;
+    
+    @Autowired
+    private AdminSettingsService adminSettingsService;
 
     @GetMapping
     public ResponseEntity<String> getUploadInfo() {
         return ResponseEntity.ok("✅ Upload endpoint ready. Use POST with multipart/form-data.");
     }
 
+    @GetMapping("/report")
+    public ResponseEntity<String> getReport(@RequestParam("path") String reportPath, 
+                                           @RequestParam("userId") String userId) {
+        try {
+            // Verify user owns this report
+            boolean hasAccess = analysisHistoryRepository.findByUserIdOrderByAnalysisDateDesc(userId)
+                .stream().anyMatch(history -> history.getReportPath().equals(reportPath));
+            
+            if (!hasAccess) {
+                return ResponseEntity.status(403).body("❌ Access denied to this report");
+            }
+            
+            String reportContent = ReportGenerator.readReportContent(reportPath);
+            return ResponseEntity.ok(reportContent);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("❌ Failed to read report: " + e.getMessage());
+        }
+    }
+    
+    @GetMapping("/history")
+    public ResponseEntity<List<AnalysisHistory>> getUserHistory(@RequestParam("userId") String userId) {
+        try {
+            List<AnalysisHistory> history = analysisHistoryRepository.findByUserIdOrderByAnalysisDateDesc(userId);
+            return ResponseEntity.ok(history);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+    
+    @PostMapping("/fix-counts")
+    public ResponseEntity<String> fixExistingCounts() {
+        try {
+            List<AnalysisHistory> allReports = analysisHistoryRepository.findAll();
+            int fixed = 0;
+            
+            for (AnalysisHistory report : allReports) {
+                try {
+                    String content = ReportGenerator.readReportContent(report.getReportPath());
+                    
+                    // Count issues by parsing the report content
+                    int critical = countIssuesInReport(content, "🔴");
+                    int high = countIssuesInReport(content, "🟡");
+                    int medium = countIssuesInReport(content, "🟠");
+                    int total = critical + high + medium;
+                    
+                    // Update if counts are different
+                    if (report.getTotalIssues() != total || report.getCriticalIssues() != critical || 
+                        report.getWarnings() != high || report.getSuggestions() != medium) {
+                        
+                        report.setTotalIssues(total);
+                        report.setCriticalIssues(critical);
+                        report.setWarnings(high);
+                        report.setSuggestions(medium);
+                        analysisHistoryRepository.save(report);
+                        fixed++;
+                    }
+                } catch (Exception e) {
+                    System.err.println("Failed to fix report: " + report.getReportPath() + " - " + e.getMessage());
+                }
+            }
+            
+            return ResponseEntity.ok("Fixed " + fixed + " reports out of " + allReports.size());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Failed to fix counts: " + e.getMessage());
+        }
+    }
+    
+    private int countIssuesInReport(String content, String emoji) {
+        return (int) content.lines()
+            .filter(line -> line.contains("🚨 " + emoji))
+            .count();
+    }
+
     @PostMapping
-    public ResponseEntity<String> handleFileUpload(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<String> handleFileUpload(@RequestParam("file") MultipartFile file, 
+                                                  @RequestParam("userId") String userId) {
+        // Check admin filters
+        if (adminSettingsService.isMaintenanceMode()) {
+            return ResponseEntity.status(503).body("❌ System is under maintenance");
+        }
+        
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("❌ No file uploaded");
+        }
+        
+        // Check file size limit
+        long maxSizeBytes = adminSettingsService.getMaxFileSize() * 1024 * 1024L;
+        if (file.getSize() > maxSizeBytes) {
+            return ResponseEntity.badRequest().body("❌ File too large. Maximum size: " + adminSettingsService.getMaxFileSize() + "MB");
+        }
+        
+        // Check file type
+        String filename = file.getOriginalFilename();
+        if (filename != null) {
+            String extension = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
+            String[] allowedTypes = adminSettingsService.getAllowedFileTypes();
+            boolean isAllowed = false;
+            for (String type : allowedTypes) {
+                if (type.trim().equals(extension)) {
+                    isAllowed = true;
+                    break;
+                }
+            }
+            if (!isAllowed) {
+                return ResponseEntity.badRequest().body("❌ File type not allowed. Allowed types: " + String.join(", ", allowedTypes));
+            }
         }
 
         try {
             // 1) unzip to a unique folder with original name
             String originalFileName = file.getOriginalFilename();
+            if (originalFileName == null || originalFileName.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("❌ Invalid file name");
+            }
+            
             String uniqueFolderName = FolderNamingUtil.generateUniqueFolderName(originalFileName, "uploads");
             String targetDir = "uploads/" + uniqueFolderName;
+            
+            // Create uploads directory if it doesn't exist
+            java.io.File uploadsDir = new java.io.File("uploads");
+            if (!uploadsDir.exists()) {
+                uploadsDir.mkdirs();
+            }
+            
             ZipExtractor.extractZip(file.getInputStream(), targetDir);
 
-            // 2) collect .java files
-            List<File> javaFiles = JavaFileCollector.collectJavaFiles(targetDir);
+            // 2) Get user settings
+            UserSettings settings = userSettingsRepository.findByUserId(userId).orElse(new UserSettings(userId));
+            
+            // 3) Use centralized analysis engine
+            CodeAnalysisEngine analysisEngine = new CodeAnalysisEngine();
+            Map<String, Object> analysisResults = analysisEngine.analyzeProject(targetDir);
+            
+            @SuppressWarnings("unchecked")
+            List<String> allIssues = (List<String>) analysisResults.get("issues");
+            
+            // Get file count from results
+            int javaFileCount = (Integer) analysisResults.get("totalFiles");
 
-            // 3) run first five detectors only
-            List<String> allIssues = new ArrayList<>();
-            for (File f : javaFiles) {
+            // 4) generate comprehensive report
+            ReportGenerator reportGen = new ReportGenerator();
+            String comprehensiveReport = reportGen.generateComprehensiveReport(analysisResults);
+            
+            String reportPath = targetDir + "/" + new java.io.File(targetDir).getName() + "_comprehensive.txt";
+            try (java.io.FileWriter writer = new java.io.FileWriter(reportPath)) {
+                writer.write(comprehensiveReport);
+            }
+            
+            // 5) save analysis to history - use severity counts from analysis engine
+            @SuppressWarnings("unchecked")
+            Map<String, Integer> severityCounts = (Map<String, Integer>) analysisResults.get("severityCounts");
+            
+            int criticalCount = severityCounts.getOrDefault("Critical", 0);
+            int warningCount = severityCounts.getOrDefault("High", 0);
+            int suggestionCount = severityCounts.getOrDefault("Medium", 0);
+            int lowCount = severityCounts.getOrDefault("Low", 0);
+            
+            // Verify total matches
+            int calculatedTotal = criticalCount + warningCount + suggestionCount + lowCount;
+            int actualTotal = Math.max(allIssues.size(), calculatedTotal);
+            
+            AnalysisHistory history = new AnalysisHistory(userId, originalFileName, reportPath, 
+                                                         actualTotal, criticalCount, warningCount, suggestionCount);
+            analysisHistoryRepository.save(history);
+            
+            // Debug logging
+            System.out.println("=== Analysis Summary ===");
+            System.out.println("Project: " + originalFileName);
+            System.out.println("Total Issues: " + actualTotal + " (from list: " + allIssues.size() + ")");
+            System.out.println("Critical: " + criticalCount);
+            System.out.println("High: " + warningCount);
+            System.out.println("Medium: " + suggestionCount);
+            System.out.println("Low: " + lowCount);
+            System.out.println("Report Path: " + reportPath);
+            
+            // 6) get AI analysis using user settings and admin filters
+            String aiStatus = "Disabled";
+            if (settings.getAiEnabled() && adminSettingsService.isAiAnalysisEnabled()) {
                 try {
-                    allIssues.addAll(LongMethodDetector.detect(f));
-                    allIssues.addAll(LongParameterListDetector.detect(f));
-                    allIssues.addAll(MagicNumberDetector.detect(f));
-                    allIssues.addAll(EmptyCatchDetector.detect(f));
-                    allIssues.addAll(LongIdentifierDetector.detect(f));
-                } catch (Exception ex) {
-                    // ensure one file failure doesn't break whole flow
-                    allIssues.add(String.format("Error analyzing %s: %s", f.getName(), ex.getMessage()));
-                    ex.printStackTrace();
+                    String reportContent = ReportGenerator.readReportContent(reportPath);
+                    String aiAnalysis = aiAssistantService.analyzeWithAI(reportContent, settings);
+                    ReportGenerator.appendAIAnalysis(reportPath, aiAnalysis);
+                    aiStatus = "Added (" + settings.getAiProvider() + ")";
+                } catch (Exception aiEx) {
+                    aiStatus = "Failed - " + aiEx.getMessage();
+                    System.err.println("AI analysis failed: " + aiEx.getMessage());
                 }
             }
-
-            // 4) generate report
-            String reportPath = ReportGenerator.generateTextReport(allIssues, targetDir);
             
-            // 5) get AI analysis
-            String aiStatus = "Failed";
-            try {
-                String reportContent = ReportGenerator.readReportContent(reportPath);
-                String aiAnalysis = ollamaService.sendToOllama(reportContent);
-                ReportGenerator.appendAIAnalysis(reportPath, aiAnalysis);
-                aiStatus = "Added";
-            } catch (java.net.ConnectException ce) {
-                aiStatus = "Failed - Ollama not running";
-                System.err.println("AI analysis failed: Ollama not running on localhost:11434");
-            } catch (java.net.http.HttpTimeoutException te) {
-                aiStatus = "Failed - Timeout";
-                System.err.println("AI analysis failed: Request timed out");
-            } catch (Exception aiEx) {
-                aiStatus = "Failed - " + aiEx.getMessage();
-                System.err.println("AI analysis failed: " + aiEx.getMessage());
-            }
 
-            // 6) response summary
+            
+            // 7) response summary with report path
             String reportFileName = new File(reportPath).getName();
-            String summary = String.format("✅ Analysis complete!\n📂 Extracted to: %s\n📄 Java files: %d\n📝 Report: %s\n🔍 Issues found: %d\n🤖 AI analysis: %s",
-                    targetDir, javaFiles.size(), reportFileName, allIssues.size(), aiStatus);
+            String summary = String.format("✅ Advanced Analysis Complete!\n📂 Extracted to: %s\n📄 Java files: %d\n📝 Report: %s\n🔍 Issues detected: %d\n🤖 AI analysis: %s\n🧠 Advanced algorithms: Cyclomatic complexity, Cognitive complexity, Semantic analysis, Pattern recognition\n📋 Report path: %s",
+                    targetDir, javaFileCount, reportFileName, allIssues.size(), aiStatus, reportPath);
 
             return ResponseEntity.ok(summary);
 
@@ -97,6 +253,82 @@ public class UploadController {
             e.printStackTrace();
             return ResponseEntity.internalServerError()
                     .body("❌ Failed to process file: " + e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                    .body("❌ Unexpected error during analysis: " + e.getMessage());
+        }
+    }
+    
+    @GetMapping("/visual")
+    public ResponseEntity<String> testVisualEndpoint() {
+        System.out.println("✅ GET /api/upload/visual endpoint hit");
+        return ResponseEntity.ok("✅ Visual report endpoint is working!");
+    }
+    
+    @PostMapping("/visual")
+    public ResponseEntity<Map<String, Object>> generateVisualReport(@RequestParam("file") MultipartFile file) {
+        System.out.println("📊 POST /api/upload/visual endpoint called with file: " + (file != null ? file.getOriginalFilename() : "null"));
+        
+        if (adminSettingsService.isMaintenanceMode()) {
+            return ResponseEntity.status(503).build();
+        }
+        
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        long maxSizeBytes = adminSettingsService.getMaxFileSize() * 1024 * 1024L;
+        if (file.getSize() > maxSizeBytes) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        String filename = file.getOriginalFilename();
+        if (filename != null) {
+            String extension = filename.substring(filename.lastIndexOf('.') + 1).toLowerCase();
+            String[] allowedTypes = adminSettingsService.getAllowedFileTypes();
+            boolean isAllowed = false;
+            for (String type : allowedTypes) {
+                if (type.trim().equals(extension)) {
+                    isAllowed = true;
+                    break;
+                }
+            }
+            if (!isAllowed) {
+                return ResponseEntity.badRequest().build();
+            }
+        }
+        
+        try {
+            String originalFileName = file.getOriginalFilename();
+            String uniqueFolderName = FolderNamingUtil.generateUniqueFolderName(originalFileName, "uploads");
+            String targetDir = "uploads/" + uniqueFolderName;
+            ZipExtractor.extractZip(file.getInputStream(), targetDir);
+            
+            VisualDependencyAnalyzer analyzer = new VisualDependencyAnalyzer();
+            Map<String, Object> analysisResults = analyzer.analyzeProject(targetDir);
+            
+            PlantUMLGenerator plantUMLGenerator = new PlantUMLGenerator();
+            String plantUMLText = plantUMLGenerator.generatePlantUMLText(analysisResults);
+            
+            // Convert PNG to base64 for JSON response
+            byte[] diagramPNG = plantUMLGenerator.generateDiagramPNG(plantUMLText);
+            String diagramBase64 = java.util.Base64.getEncoder().encodeToString(diagramPNG);
+            
+            // Prepare response data
+            Map<String, Object> response = new HashMap<>();
+            response.put("projectName", originalFileName != null ? originalFileName.replace(".zip", "") : "Java Project");
+            response.put("analysisResults", analysisResults);
+            response.put("diagramBase64", diagramBase64);
+            response.put("plantUMLText", plantUMLText);
+            
+            return ResponseEntity.ok(response);
+                
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Failed to generate visual report: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(errorResponse);
         }
     }
 }

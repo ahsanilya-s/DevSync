@@ -1,56 +1,41 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Sun, Moon } from 'lucide-react';
 import Particles from '../components/Particles';
 import Carousel from '../components/Carousel';
+import './Landing.css';
 
 export default function Landing() {
     const nav = useNavigate();
+    const [isDarkMode, setIsDarkMode] = useState(true);
+
+    const handleToggleTheme = () => {
+        setIsDarkMode(!isDarkMode);
+    };
 
     return (
-        <div style={{ width: '100%', maxWidth: '100vw', overflowX: 'hidden' }}>
+        <div className={`mainWrapper ${isDarkMode ? 'darkTheme' : 'lightTheme'}`}>
             {/* Navigation Header */}
-            <div style={{
-                position: 'fixed',
-                top: '20px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                zIndex: 10,
-                backgroundColor: 'rgba(0,0,0,0.3)',
-                backdropFilter: 'blur(10px)',
-                borderRadius: '50px',
-                padding: '10px 30px',
-                border: '1px solid rgba(255,255,255,0.2)',
-                minWidth: '500px'
-            }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>DevSync</div>
-                    <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                        <a href="#features" style={{ color: 'white', textDecoration: 'none', padding: '8px 16px' }}>Features</a>
+            <div className={`topNavBar ${isDarkMode ? 'darkTheme' : 'lightTheme'}`}>
+                <div className="navContent">
+                    <img src="/logo.png" alt="DevSync" className="brandLogo" />
+                    <div className="navActions">
+                        <a href="#features" className={`featuresLink ${isDarkMode ? 'darkTheme' : 'lightTheme'}`}>Features</a>
+                        <button
+                            onClick={handleToggleTheme}
+                            className={`themeToggleBtn ${isDarkMode ? 'darkTheme' : 'lightTheme'}`}
+                        >
+                            {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
+                        </button>
                         <button
                             onClick={() => nav('/login')}
-                            style={{
-                                padding: '8px 16px',
-                                fontSize: '14px',
-                                backgroundColor: 'transparent',
-                                color: 'white',
-                                border: '1px solid rgba(255,255,255,0.3)',
-                                borderRadius: '20px',
-                                cursor: 'pointer'
-                            }}
+                            className={`loginBtn ${isDarkMode ? 'darkTheme' : 'lightTheme'}`}
                         >
                             Login
                         </button>
                         <button
                             onClick={() => nav('/signup')}
-                            style={{
-                                padding: '8px 16px',
-                                fontSize: '14px',
-                                backgroundColor: '#007bff',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '20px',
-                                cursor: 'pointer'
-                            }}
+                            className="signupBtn"
                         >
                             Sign Up
                         </button>
@@ -59,9 +44,9 @@ export default function Landing() {
             </div>
 
             {/* Hero Section */}
-            <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
+            <div className="heroContainer">
                 <Particles
-                    particleColors={['#ffffff', '#ffffff']}
+                    particleColors={isDarkMode ? ['#ffffff', '#ffffff'] : ['#000000', '#000000']}
                     particleCount={200}
                     particleSpread={10}
                     speed={0.1}
@@ -71,45 +56,21 @@ export default function Landing() {
                     disableRotation={false}
                 />
                 
-                <div style={{ 
-                    position: 'absolute', 
-                    top: '50%', 
-                    left: '50%', 
-                    transform: 'translate(-50%, -50%)',
-                    zIndex: 2,
-                    textAlign: 'center',
-                    color: 'white'
-                }}>
-                    <h1 style={{ fontSize: '48px', marginBottom: '10px' }}>Welcome to DevSync</h1>
-                    <p style={{ fontSize: '18px', marginBottom: '30px', color: '#d0d0d0' }}>
+                <div className={`heroContent ${isDarkMode ? 'darkTheme' : 'lightTheme'}`}>
+                    <h1 className="mainTitle">Welcome to DevSync</h1>
+                    <p className={`heroDescription ${isDarkMode ? 'darkTheme' : 'lightTheme'}`}>
                         Analyze your Java code, detect bugs, and improve quality with AI-powered insights.
                     </p>
-                    <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
+                    <div className="heroButtons">
                         <button
                             onClick={() => nav('/signup')}
-                            style={{
-                                padding: '12px 24px',
-                                fontSize: '16px',
-                                backgroundColor: '#007bff',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '5px',
-                                cursor: 'pointer'
-                            }}
+                            className="primaryBtn"
                         >
                             Sign Up
                         </button>
                         <button
                             onClick={() => nav('/login')}
-                            style={{
-                                padding: '12px 24px',
-                                fontSize: '16px',
-                                backgroundColor: '#28a745',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '5px',
-                                cursor: 'pointer'
-                            }}
+                            className="secondaryBtn"
                         >
                             Login
                         </button>
@@ -118,20 +79,10 @@ export default function Landing() {
             </div>
 
             {/* Features Section */}
-            <div id="features" style={{ 
-                width: '100%', 
-                height: '100vh', 
-                position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                overflowX: 'hidden'
-            }}>
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0.3 }}>
+            <div id="features" className={`featuresSection ${isDarkMode ? 'darkTheme' : 'lightTheme'}`}>
+                <div className="particleBackground">
                     <Particles
-                        particleColors={['#ffffff', '#ffffff']}
+                        particleColors={isDarkMode ? ['#ffffff', '#ffffff'] : ['#000000', '#000000']}
                         particleCount={100}
                         particleSpread={8}
                         speed={0.05}
@@ -141,19 +92,11 @@ export default function Landing() {
                         disableRotation={false}
                     />
                 </div>
-                <div style={{ 
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: '100%',
-                    zIndex: 2,
-                    position: 'relative'
-                }}>
-                    <h2 style={{ fontSize: '36px', marginBottom: '60px', textAlign: 'center' }}>
+                <div className="featuresContent">
+                    <h2 className="featuresTitle">
                         Explore DevSync Features
                     </h2>
-                    <div style={{ width: '300px', height: '300px' }}>
+                    <div className="carouselWrapper">
                         <Carousel
                             baseWidth={300}
                             autoplay={true}
