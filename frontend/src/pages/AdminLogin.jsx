@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
-import { Shield, Eye, EyeOff } from 'lucide-react'
+import { Shield, Eye, EyeOff, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { Toaster } from '../components/ui/sonner'
 import api from '../api'
@@ -35,6 +35,13 @@ const AdminLogin = () => {
 
   return (
     <div className="adminLoginPage">
+      <button
+        onClick={() => navigate('/')}
+        className="backToHomeBtn"
+      >
+        <ArrowLeft className="backIcon" />
+        Back to Home
+      </button>
       <div className="adminLoginCard">
         <div className="adminLoginHeader">
           <div className="adminIconWrapper">
@@ -80,11 +87,6 @@ const AdminLogin = () => {
               {isLoading ? 'Logging in...' : 'Login'}
             </button>
           </form>
-          <div className="adminCredentialsInfo">
-            <p className="adminCredentialsText">
-              Default: admin / aaaa
-            </p>
-          </div>
         </div>
       </div>
       <Toaster position="bottom-right" />
