@@ -120,12 +120,20 @@ export function VisualReport({ reportContent, isOpen, onClose, isDarkMode, proje
         }
       }
       
-      // Parse metadata from DevSync report
+      // Parse metadata from DevSync report - handle both formats
       if (line.includes('Analyzed') && line.includes('files, found')) {
-        const match = line.match(/Analyzed (\d+) files, found (\d+) issues/)
+        // Try format: "Analyzed X files, found Y issues"
+        let match = line.match(/Analyzed (\d+) files, found (\d+) issues/)
         if (match) {
           totalFiles = parseInt(match[1])
           if (totalIssues === 0) totalIssues = parseInt(match[2])
+        } else {
+          // Try format: "Analyzed files, found Y issues" (missing file count)
+          match = line.match(/Analyzed files, found (\d+) issues/)
+          if (match) {
+            if (totalIssues === 0) totalIssues = parseInt(match[1])
+            // File count will be calculated from fileStats if available
+          }
         }
       }
       
@@ -185,6 +193,12 @@ export function VisualReport({ reportContent, isOpen, onClose, isDarkMode, proje
         fileStats[issue.file][issue.severity]++
         fileStats[issue.file].total++
       })
+    }
+    
+    // If totalFiles is still 0, calculate from fileStats
+    if (totalFiles === 0 && Object.keys(fileStats).length > 0) {
+      totalFiles = Object.keys(fileStats).length
+      console.log('Calculated totalFiles from fileStats:', totalFiles)
     }
 
       console.log('Final parsed data:')

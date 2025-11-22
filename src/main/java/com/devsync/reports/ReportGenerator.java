@@ -46,7 +46,9 @@ public class ReportGenerator {
         report.append("SUMMARY\n");
         report.append("-------\n");
         int totalIssues = deduplicatedIssues.size();
-        report.append(String.format("Analyzed files, found %d issues (%d critical, %d high, %d medium, %d low)\n\n",
+        int totalFiles = (Integer) analysisResults.getOrDefault("totalFiles", 0);
+        report.append(String.format("Analyzed %d files, found %d issues (%d critical, %d high, %d medium, %d low)\n\n",
+            totalFiles,
             totalIssues,
             severityCounts.getOrDefault("Critical", 0),
             severityCounts.getOrDefault("High", 0),
