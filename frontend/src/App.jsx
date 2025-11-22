@@ -12,11 +12,20 @@ import AdminPanel from './pages/AdminPanel'
 import AdminLogin from './pages/AdminLogin'
 import Dashboard from './pages/Dashboard'
 
+// Import new pages
+import Features from './pages/Features'
+import Pricing from './pages/Pricing'
+import Documentation from './pages/Documentation'
+import About from './pages/About'
+import Contact from './pages/Contact'
+import Support from './pages/Support'
+
 // Import new UI components
 import { Button } from './components/ui/button'
 
 // Landing Page Component with Backend Integration
 function LandingPage({ onLogin, onSignup, isDarkMode, setIsDarkMode }) {
+  const navigate = useNavigate()
 
   useEffect(() => {
     const observerOptions = {
@@ -442,9 +451,9 @@ function LandingPage({ onLogin, onSignup, isDarkMode, setIsDarkMode }) {
                     <ul className={`space-y-2 ${
                       isDarkMode ? 'text-gray-400' : 'text-gray-600'
                     }`}>
-                      <li>Features</li>
-                      <li>Pricing</li>
-                      <li>Documentation</li>
+                      <li><button onClick={() => navigate('/features')} className="hover:text-blue-400 transition-colors cursor-pointer">Features</button></li>
+                      <li><button onClick={() => navigate('/pricing')} className="hover:text-blue-400 transition-colors cursor-pointer">Pricing</button></li>
+                      <li><button onClick={() => navigate('/documentation')} className="hover:text-blue-400 transition-colors cursor-pointer">Documentation</button></li>
                     </ul>
                   </div>
                   
@@ -455,9 +464,9 @@ function LandingPage({ onLogin, onSignup, isDarkMode, setIsDarkMode }) {
                     <ul className={`space-y-2 ${
                       isDarkMode ? 'text-gray-400' : 'text-gray-600'
                     }`}>
-                      <li>About</li>
-                      <li>Contact</li>
-                      <li>Support</li>
+                      <li><button onClick={() => navigate('/about')} className="hover:text-blue-400 transition-colors cursor-pointer">About</button></li>
+                      <li><button onClick={() => navigate('/contact')} className="hover:text-blue-400 transition-colors cursor-pointer">Contact</button></li>
+                      <li><button onClick={() => navigate('/support')} className="hover:text-blue-400 transition-colors cursor-pointer">Support</button></li>
                     </ul>
                   </div>
                   
@@ -525,6 +534,12 @@ export default function App() {
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/admin/dashboard" element={<AdminPanel />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/features" element={<Features />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/documentation" element={<Documentation />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/support" element={<Support />} />
       </Routes>
       <Toaster
         position="bottom-right"
