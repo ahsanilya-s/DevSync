@@ -43,7 +43,7 @@ Shared test helper
 Why the tests use JavaParser
 ----------------------------
 Each detector consumes a `CompilationUnit` AST. Tests create small self-contained Java snippets (as strings) and parse them into `CompilationUnit` objects using JavaParser. This keeps tests fast and deterministic: they don't require compiling classes to disk or running the whole application.
-
+testing javaparser with code
 How tests are structured
 ------------------------
 - Each detector has a one-to-one JUnit 5 test class.
