@@ -1,10 +1,33 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { X, AlertTriangle, CheckCircle, XCircle, TrendingUp, FileText, Code, Bug } from 'lucide-react'
 import { Button } from './ui/button'
 import './VisualReport.css'
 
-export function VisualReport({ reportContent, isOpen, onClose, isDarkMode, projectName }) {
+export function VisualReport({ reportContent, isOpen, onClose, isDarkMode, projectName, projectPath }) {
   const [reportData, setReportData] = useState(null)
+  const navigate = useNavigate()
+
+  const handleFileClick = (fileName) => {
+    console.log('File clicked:', fileName)
+    console.log('Project path:', projectPath)
+    console.log('Project name:', projectName)
+    
+    if (!projectPath) {
+      console.error('No projectPath provided! Cannot navigate to file viewer.')
+      alert('Project path is missing. Please re-analyze the project.')
+      return
+    }
+    
+    if (projectPath && fileName) {
+      // Close the report modal before navigating
+      onClose()
+      
+      const url = `/fileviewer?project=${encodeURIComponent(projectPath)}&file=${encodeURIComponent(fileName)}&returnTo=report`
+      console.log('Navigating to:', url)
+      navigate(url)
+    }
+  }
 
   useEffect(() => {
     if (reportContent && isOpen) {
@@ -430,7 +453,14 @@ export function VisualReport({ reportContent, isOpen, onClose, isDarkMode, proje
                       .slice(0, 10)
                       .map(([file, stats]) => (
                       <tr key={file} className={`border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                        <td className="py-2 font-mono text-sm">{file}</td>
+                        <td className="py-2 font-mono text-sm">
+                          <button
+                            onClick={() => handleFileClick(file)}
+                            className="text-blue-500 hover:text-blue-600 hover:underline cursor-pointer text-left"
+                          >
+                            {file}
+                          </button>
+                        </td>
                         <td className="text-center py-2">
                           <span className={`px-2 py-1 rounded text-xs ${stats.critical > 0 ? 'bg-red-100 text-red-800' : 'text-gray-400'}`}>
                             {stats.critical}

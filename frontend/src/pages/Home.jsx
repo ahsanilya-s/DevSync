@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Sidebar } from '../components/Sidebar'
 import { Header } from '../components/Header'
 import { UploadArea } from '../components/UploadArea'
@@ -15,6 +15,7 @@ import './Home.css'
 
 export default function Home() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [showResults, setShowResults] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
@@ -27,6 +28,15 @@ export default function Home() {
   const [projectName, setProjectName] = useState('')
   const [visualReportData, setVisualReportData] = useState(null)
   const [showVisualReport, setShowVisualReport] = useState(false)
+
+  // Handle returning from file viewer
+  useEffect(() => {
+    if (location.state?.openReport) {
+      setShowReportModal(true)
+      // Clear the state
+      navigate('/home', { replace: true, state: {} })
+    }
+  }, [location.state])
 
   const handleNewAnalysis = () => {
     setShowResults(false)
@@ -148,6 +158,12 @@ export default function Home() {
       
       setReportPath(extractedReportPath)
       setProjectName(file.name.replace(/\.[^/.]+$/, "")) // Remove file extension
+      
+      // Extract project path from report path (remove filename)
+      if (extractedReportPath) {
+        const projectPath = extractedReportPath.substring(0, extractedReportPath.lastIndexOf('/'))
+        console.log('Extracted project path:', projectPath)
+      }
       
       setAnalysisResults(results)
       setIsAnalyzing(false)
@@ -284,6 +300,7 @@ export default function Home() {
         onClose={() => setShowReportModal(false)}
         isDarkMode={isDarkMode}
         projectName={projectName}
+        projectPath={reportPath ? reportPath.substring(0, reportPath.lastIndexOf('/')) : ''}
       />
 
       {/* Advanced Visual Report Modal */}

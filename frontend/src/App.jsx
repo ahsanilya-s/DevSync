@@ -19,6 +19,7 @@ import Documentation from './pages/Documentation'
 import About from './pages/About'
 import Contact from './pages/Contact'
 import Support from './pages/Support'
+import FileViewer from './pages/FileViewer'
 
 // Import new UI components
 import { Button } from './components/ui/button'
@@ -540,6 +541,7 @@ export default function App() {
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/support" element={<Support />} />
+        <Route path="/fileviewer" element={<FileViewer />} />
       </Routes>
       <Toaster
         position="bottom-right"

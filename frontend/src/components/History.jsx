@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, FileText, Folder, Clock } from 'lucide-react';
+import { X, FileText, Folder, Clock, Eye } from 'lucide-react';
+import { VisualReport } from './VisualReport';
 import api from '../api';
 
 export function History({ isOpen, onClose, isDarkMode }) {
@@ -7,6 +8,9 @@ export function History({ isOpen, onClose, isDarkMode }) {
   const [selectedReport, setSelectedReport] = useState(null);
   const [reportContent, setReportContent] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showVisualReport, setShowVisualReport] = useState(false);
+  const [selectedProjectPath, setSelectedProjectPath] = useState('');
+  const [selectedProjectName, setSelectedProjectName] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -24,18 +28,24 @@ export function History({ isOpen, onClose, isDarkMode }) {
     }
   };
 
-  const handleReportClick = async (reportPath) => {
+  const handleReportClick = async (reportPath, projectPath, projectName) => {
     setLoading(true);
     try {
       const userId = localStorage.getItem('userId') || 'anonymous';
       const response = await api.get(`/upload/report?path=${encodeURIComponent(reportPath)}&userId=${userId}`);
       setReportContent(response.data);
       setSelectedReport(reportPath);
+      setSelectedProjectPath(projectPath || reportPath.substring(0, reportPath.lastIndexOf('/')));
+      setSelectedProjectName(projectName);
     } catch (error) {
       console.error('Failed to fetch report:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleShowVisualReport = () => {
+    setShowVisualReport(true);
   };
 
   const formatDate = (timestamp) => {
@@ -83,7 +93,7 @@ export function History({ isOpen, onClose, isDarkMode }) {
               history.map((item, index) => (
                 <div
                   key={index}
-                  onClick={() => handleReportClick(item.reportPath)}
+                  onClick={() => handleReportClick(item.reportPath, item.projectPath, item.projectName)}
                   className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                     selectedReport === item.reportPath
                       ? isDarkMode 
@@ -141,11 +151,24 @@ export function History({ isOpen, onClose, isDarkMode }) {
             </div>
           ) : selectedReport ? (
             <div>
-              <h4 className={`text-lg font-semibold mb-4 ${
-                isDarkMode ? 'text-gray-100' : 'text-gray-900'
-              }`}>
-                Report: {selectedReport}
-              </h4>
+              <div className="flex items-center justify-between mb-4">
+                <h4 className={`text-lg font-semibold ${
+                  isDarkMode ? 'text-gray-100' : 'text-gray-900'
+                }`}>
+                  {selectedProjectName}
+                </h4>
+                <button
+                  onClick={handleShowVisualReport}
+                  className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+                    isDarkMode
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      : 'bg-blue-500 hover:bg-blue-600 text-white'
+                  }`}
+                >
+                  <Eye className="h-4 w-4" />
+                  Visual Report
+                </button>
+              </div>
               <div className={`p-4 rounded-lg border font-mono text-sm whitespace-pre-wrap overflow-y-auto max-h-[calc(80vh-120px)] ${
                 isDarkMode 
                   ? 'bg-gray-800/50 border-gray-700 text-gray-300'
@@ -165,6 +188,15 @@ export function History({ isOpen, onClose, isDarkMode }) {
           )}
         </div>
       </div>
+
+      <VisualReport
+        reportContent={reportContent}
+        isOpen={showVisualReport}
+        onClose={() => setShowVisualReport(false)}
+        isDarkMode={isDarkMode}
+        projectName={selectedProjectName}
+        projectPath={selectedProjectPath}
+      />
     </div>
   );
 }
