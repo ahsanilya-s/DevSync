@@ -20,10 +20,17 @@ export function VisualReport({ reportContent, isOpen, onClose, isDarkMode, proje
     }
     
     if (projectPath && fileName) {
+      // Store report data in sessionStorage so we can restore it
+      sessionStorage.setItem('returnToReport', JSON.stringify({
+        reportContent,
+        projectName,
+        projectPath
+      }))
+      
       // Close the report modal before navigating
       onClose()
       
-      const url = `/fileviewer?project=${encodeURIComponent(projectPath)}&file=${encodeURIComponent(fileName)}&returnTo=report`
+      const url = `/fileviewer?project=${encodeURIComponent(projectPath)}&file=${encodeURIComponent(fileName)}`
       console.log('Navigating to:', url)
       navigate(url)
     }

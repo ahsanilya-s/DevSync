@@ -23,8 +23,13 @@ export default function FileViewer() {
   const userId = localStorage.getItem('userId')
 
   const handleBack = () => {
-    // Navigate back to home/dashboard and trigger report modal to reopen
-    navigate('/home', { state: { openReport: true, projectPath, reportContent: null } })
+    // Navigate back to home and trigger report modal to reopen with stored data
+    const storedData = sessionStorage.getItem('returnToReport')
+    if (storedData) {
+      navigate('/home', { state: { openReport: true, reportData: JSON.parse(storedData) } })
+    } else {
+      navigate('/home')
+    }
   }
 
   useEffect(() => {
