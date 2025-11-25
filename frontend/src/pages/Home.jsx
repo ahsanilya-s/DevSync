@@ -31,8 +31,25 @@ export default function Home() {
 
   // Handle returning from file viewer
   useEffect(() => {
-    if (location.state?.openReport) {
+    if (location.state?.openReport && location.state?.reportData) {
+      const { reportContent: storedContent, projectName: storedName, projectPath: storedPath } = location.state.reportData
+      
+      // Restore the report data
+      setReportContent(storedContent)
+      setProjectName(storedName)
+      
+      // Reconstruct reportPath from projectPath
+      // projectPath is like "uploads/ProjectName", reportPath should be "uploads/ProjectName/report.txt"
+      if (storedPath) {
+        const reconstructedReportPath = storedPath + '/' + storedPath.split('/').pop() + '_comprehensive.txt'
+        setReportPath(reconstructedReportPath)
+      }
+      
       setShowReportModal(true)
+      
+      // Clear sessionStorage
+      sessionStorage.removeItem('returnToReport')
+      
       // Clear the state
       navigate('/home', { replace: true, state: {} })
     }
