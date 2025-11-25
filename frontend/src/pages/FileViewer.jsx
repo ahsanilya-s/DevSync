@@ -16,14 +16,15 @@ export default function FileViewer() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [isDarkMode, setIsDarkMode] = useState(true)
+  const [expandedIssue, setExpandedIssue] = useState(null)
+  const [aiRefactoring, setAiRefactoring] = useState({})
+  const [loadingAi, setLoadingAi] = useState({})
 
   const projectPath = searchParams.get('project')
   const fileName = searchParams.get('file')
-  const returnTo = searchParams.get('returnTo')
   const userId = localStorage.getItem('userId')
 
   const handleBack = () => {
-    // Navigate back to home and trigger report modal to reopen with stored data
     const storedData = sessionStorage.getItem('returnToReport')
     if (storedData) {
       navigate('/home', { state: { openReport: true, reportData: JSON.parse(storedData) } })
@@ -45,19 +46,16 @@ export default function FileViewer() {
     try {
       setLoading(true)
       
-      // Fetch file content
       const contentRes = await api.get('/fileview/content', {
         params: { projectPath, fileName, userId }
       })
       setFileContent(contentRes.data.content)
 
-      // Fetch highlights
       const highlightsRes = await api.get('/fileview/highlights', {
         params: { projectPath, userId }
       })
       setHighlights(highlightsRes.data[fileName] || {})
 
-      // Fetch issues
       const issuesRes = await api.get('/fileview/issues', {
         params: { projectPath, fileName, userId }
       })
@@ -110,6 +108,76 @@ export default function FileViewer() {
     return icons[severity] || '⚪'
   }
 
+  const extractCodeChunk = (lineNumber, smellType) => {
+    const lines = fileContent.split('\n')
+    let startLine = lineNumber - 1
+    let endLine = lineNumber - 1
+
+    if (smellType === 'LongMethod') {
+      for (let i = startLine; i >= 0; i--) {
+        if (lines[i].match(/\b(public|private|protected)\s+(static\s+)?\w+\s+\w+\s*\(/)) {
+          startLine = i
+          break
+        }
+      }
+      let braceCount = 0
+      for (let i = startLine; i < lines.length; i++) {
+        braceCount += (lines[i].match(/\{/g) || []).length
+        braceCount -= (lines[i].match(/\}/g) || []).length
+        if (braceCount === 0 && i > startLine) {
+          endLine = i
+          break
+        }
+      }
+    } else {
+      startLine = Math.max(0, lineNumber - 6)
+      endLine = Math.min(lines.length - 1, lineNumber + 4)
+    }
+
+    return {
+      code: lines.slice(startLine, endLine + 1).join('\n'),
+      startLine: startLine + 1,
+      endLine: endLine + 1
+    }
+  }
+
+  const handleAiRefactor = async (issue, idx) => {
+    if (expandedIssue === idx && aiRefactoring[idx]) {
+      setExpandedIssue(null)
+      return
+    }
+
+    setExpandedIssue(idx)
+    
+    if (aiRefactoring[idx]) return
+
+    setLoadingAi({ ...loadingAi, [idx]: true })
+
+    try {
+      const { code, startLine, endLine } = extractCodeChunk(issue.line, issue.type)
+      
+      const response = await api.post('/ai/refactor', {
+        smellType: issue.type,
+        fileName: fileName,
+        startLine,
+        endLine,
+        code,
+        message: issue.message
+      })
+
+      setAiRefactoring({ ...aiRefactoring, [idx]: response.data })
+    } catch (err) {
+      setAiRefactoring({ 
+        ...aiRefactoring, 
+        [idx]: { 
+          error: 'Failed to get AI refactoring: ' + (err.response?.data?.error || err.message) 
+        } 
+      })
+    } finally {
+      setLoadingAi({ ...loadingAi, [idx]: false })
+    }
+  }
+
   if (loading) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${
@@ -141,7 +209,6 @@ export default function FileViewer() {
     <div className={`min-h-screen ${
       isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'
     }`}>
-      {/* Header */}
       <div className={`sticky top-0 z-10 border-b ${
         isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
       }`}>
@@ -175,7 +242,6 @@ export default function FileViewer() {
         </div>
       </div>
 
-      {/* Smell Type Tabs */}
       <div className={`border-b ${
         isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
       }`}>
@@ -216,7 +282,6 @@ export default function FileViewer() {
         </div>
       </div>
 
-      {/* Code Display */}
       <div className="container mx-auto px-6 py-6">
         <div className={`rounded-lg overflow-hidden border ${
           isDarkMode ? 'border-gray-700' : 'border-gray-200'
@@ -238,7 +303,6 @@ export default function FileViewer() {
           </SyntaxHighlighter>
         </div>
 
-        {/* Issues List */}
         {issues.length > 0 && (
           <div className={`mt-6 rounded-lg border p-6 ${
             isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
@@ -275,11 +339,65 @@ export default function FileViewer() {
                           {issue.message}
                         </p>
                         {issue.suggestion && (
-                          <p className={`text-sm ${
+                          <p className={`text-sm mb-3 ${
                             isDarkMode ? 'text-blue-400' : 'text-blue-600'
                           }`}>
                             💡 {issue.suggestion}
                           </p>
+                        )}
+                        
+                        <button
+                          onClick={() => handleAiRefactor(issue, idx)}
+                          disabled={loadingAi[idx]}
+                          className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                            isDarkMode
+                              ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                              : 'bg-purple-500 hover:bg-purple-600 text-white'
+                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        >
+                          {loadingAi[idx] ? '🔄 Loading...' : '🤖 AI Refactored Code'}
+                        </button>
+
+                        {expandedIssue === idx && aiRefactoring[idx] && (
+                          <div className={`mt-4 p-4 rounded-lg border max-w-full overflow-hidden ${
+                            isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'
+                          }`}>
+                            {aiRefactoring[idx].error ? (
+                              <p className="text-red-500 text-sm">{aiRefactoring[idx].error}</p>
+                            ) : (
+                              <>
+                                <h4 className="font-semibold mb-2 text-green-500">✨ Refactored Code</h4>
+                                <div className="rounded mb-3 overflow-hidden max-w-full">
+                                  <SyntaxHighlighter
+                                    language="java"
+                                    style={isDarkMode ? vscDarkPlus : vs}
+                                    showLineNumbers={true}
+                                    customStyle={{
+                                      margin: 0,
+                                      fontSize: '12px',
+                                      maxWidth: '100%'
+                                    }}
+                                  >
+                                    {aiRefactoring[idx].refactoredCode}
+                                  </SyntaxHighlighter>
+                                </div>
+                                
+                                <h4 className="font-semibold mb-1 text-blue-500">📝 Explanation</h4>
+                                <p className={`text-sm mb-3 break-words ${
+                                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                                }`}>
+                                  {aiRefactoring[idx].explanation}
+                                </p>
+                                
+                                <h4 className="font-semibold mb-1 text-yellow-500">🎯 How Smell is Removed</h4>
+                                <p className={`text-sm break-words ${
+                                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                                }`}>
+                                  {aiRefactoring[idx].howRemoved}
+                                </p>
+                              </>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
