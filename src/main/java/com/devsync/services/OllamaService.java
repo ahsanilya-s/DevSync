@@ -83,6 +83,36 @@ public class OllamaService {
         }
     }
     
+    public String generateResponse(String prompt) throws IOException, InterruptedException {
+        if (!isOllamaAvailable()) {
+            return "AI service is not available. Please ensure Ollama is running.";
+        }
+        
+        String requestBody = String.format(
+            "{\"model\": \"deepseek-coder:latest\", \"messages\": [{\"role\": \"user\", \"content\": \"%s\"}], \"stream\": false}",
+            prompt.replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "")
+        );
+        
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(OLLAMA_URL))
+                .header("Content-Type", "application/json")
+                .timeout(java.time.Duration.ofMinutes(2))
+                .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                .build();
+        
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        
+        if (response.statusCode() == 200) {
+            JsonNode jsonResponse = objectMapper.readTree(response.body());
+            JsonNode messageNode = jsonResponse.get("message");
+            if (messageNode != null && messageNode.get("content") != null) {
+                return messageNode.get("content").asText();
+            }
+        }
+        
+        throw new IOException("Failed to get response from Ollama");
+    }
+    
     private String generateFallbackAnalysis(String reportContent) {
         if (reportContent.contains("No issues found")) {
             return "\n\n=== AI ANALYSIS (Fallback) ===\n" +
