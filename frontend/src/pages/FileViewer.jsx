@@ -22,7 +22,7 @@ export default function FileViewer() {
 
   const projectPath = searchParams.get('project')
   const fileName = searchParams.get('file')
-  const userId = localStorage.getItem('userId')
+  const userId = localStorage.getItem('userId') || 'anonymous'
 
   const handleBack = () => {
     const storedData = sessionStorage.getItem('returnToReport')
@@ -34,13 +34,13 @@ export default function FileViewer() {
   }
 
   useEffect(() => {
-    if (!projectPath || !fileName || !userId) {
-      setError('Missing required parameters')
+    if (!projectPath || !fileName) {
+      setError('Missing required parameters: ' + (!projectPath ? 'project path' : 'file name'))
       setLoading(false)
       return
     }
     fetchData()
-  }, [projectPath, fileName, userId])
+  }, [projectPath, fileName])
 
   const fetchData = async () => {
     try {
