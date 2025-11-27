@@ -43,7 +43,7 @@ public class OllamaService {
         }
         
         String requestBody = String.format(
-            "{\"model\": \"deepseek-coder:latest\", \"messages\": [{\"role\": \"user\", \"content\": \"%s\"}], \"stream\": false}",
+            "{\"model\": \"llama3.1:latest\", \"messages\": [{\"role\": \"system\", \"content\": \"You are a helpful assistant.\"}, {\"role\": \"user\", \"content\": \"%s\"}], \"stream\": false}",
             prompt.replace("\"", "\\\"").replace("\n", "\\n")
         );
         
@@ -89,7 +89,7 @@ public class OllamaService {
         }
         
         String requestBody = String.format(
-            "{\"model\": \"deepseek-coder:latest\", \"messages\": [{\"role\": \"user\", \"content\": \"%s\"}], \"stream\": false}",
+            "{\"model\": \"llama3.1:latest\", \"messages\": [{\"role\": \"system\", \"content\": \"You are a code refactoring assistant. Always respond with valid JSON only.\"}, {\"role\": \"user\", \"content\": \"%s\"}], \"stream\": false}",
             prompt.replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "")
         );
         

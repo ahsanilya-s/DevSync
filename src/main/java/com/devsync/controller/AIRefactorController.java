@@ -1,6 +1,8 @@
 package com.devsync.controller;
 
 import com.devsync.services.OllamaService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +17,8 @@ public class AIRefactorController {
 
     @Autowired
     private OllamaService ollamaService;
+    
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @PostMapping("/refactor")
     public ResponseEntity<?> refactorCode(@RequestBody Map<String, Object> request) {
@@ -48,14 +52,10 @@ public class AIRefactorController {
                                          Integer startLine, Integer endLine, 
                                          String code, String message) {
         return String.format(
-            "You MUST follow this exact JSON schema. Do not add extra text. Do not add markdown. Do not add comments. " +
-            "You MUST respond ONLY in valid JSON.\n\n" +
-            "{\n" +
-            "  \"refactoredCode\": \"<clean Java code only>\",\n" +
-            "  \"explanation\": \"<one short sentence>\",\n" +
-            "  \"howRemoved\": \"<one short sentence how %s was fixed>\"\n" +
-            "}\n\n" +
-            "Now refactor this Java code:\n\n%s",
+            "Refactor this Java code to fix the %s smell.\n\n" +
+            "Code:\n%s\n\n" +
+            "Return ONLY a JSON object with these 3 fields (no other text):\n" +
+            "{\"refactoredCode\":\"...\",\"explanation\":\"...\",\"howRemoved\":\"...\"}",
             smellType, code
         );
     }
@@ -65,29 +65,31 @@ public class AIRefactorController {
         
         try {
             response = response.trim();
+            response = decodeHtmlEntities(response);
+            response = response.replaceAll("```json\\s*", "").replaceAll("```\\s*", "");
+            
             int jsonStart = response.indexOf("{");
             int jsonEnd = response.lastIndexOf("}");
             
-            if (jsonStart != -1 && jsonEnd != -1) {
-                String jsonStr = response.substring(jsonStart, jsonEnd + 1);
-                
-                String refactoredCode = extractJsonValue(jsonStr, "refactoredCode");
-                String explanation = extractJsonValue(jsonStr, "explanation");
-                String howRemoved = extractJsonValue(jsonStr, "howRemoved");
-                
-                if (refactoredCode != null && !refactoredCode.isEmpty()) {
-                    result.put("refactoredCode", refactoredCode);
-                }
-                if (explanation != null && !explanation.isEmpty()) {
-                    result.put("explanation", explanation);
-                }
-                if (howRemoved != null && !howRemoved.isEmpty()) {
-                    result.put("howRemoved", howRemoved);
-                }
+            if (jsonStart == -1 || jsonEnd == -1 || jsonEnd <= jsonStart) {
+                return createFallbackResponse(response);
             }
             
-            if (!result.containsKey("refactoredCode") || result.get("refactoredCode").isEmpty()) {
-                result.put("refactoredCode", "// AI could not generate refactored code\n// Please try again");
+            String jsonStr = response.substring(jsonStart, jsonEnd + 1);
+            JsonNode jsonNode = objectMapper.readTree(jsonStr);
+            
+            if (jsonNode.has("refactoredCode") && !jsonNode.get("refactoredCode").isNull()) {
+                result.put("refactoredCode", jsonNode.get("refactoredCode").asText());
+            }
+            if (jsonNode.has("explanation") && !jsonNode.get("explanation").isNull()) {
+                result.put("explanation", jsonNode.get("explanation").asText());
+            }
+            if (jsonNode.has("howRemoved") && !jsonNode.get("howRemoved").isNull()) {
+                result.put("howRemoved", jsonNode.get("howRemoved").asText());
+            }
+            
+            if (!result.containsKey("refactoredCode") || result.get("refactoredCode").trim().isEmpty()) {
+                return createFallbackResponse(response);
             }
             if (!result.containsKey("explanation")) {
                 result.put("explanation", "Code refactored to improve quality.");
@@ -97,36 +99,28 @@ public class AIRefactorController {
             }
             
         } catch (Exception e) {
-            result.put("refactoredCode", "// Error parsing AI response");
-            result.put("explanation", "Failed to parse response.");
-            result.put("howRemoved", "N/A");
+            System.err.println("Error parsing AI response: " + e.getMessage());
+            return createFallbackResponse(response);
         }
         
         return result;
     }
     
-    private String extractJsonValue(String json, String key) {
-        try {
-            String searchKey = "\"" + key + "\":";
-            int keyIndex = json.indexOf(searchKey);
-            if (keyIndex == -1) return null;
-            
-            int valueStart = json.indexOf("\"", keyIndex + searchKey.length());
-            if (valueStart == -1) return null;
-            
-            int valueEnd = valueStart + 1;
-            while (valueEnd < json.length()) {
-                if (json.charAt(valueEnd) == '\"' && json.charAt(valueEnd - 1) != '\\') {
-                    break;
-                }
-                valueEnd++;
-            }
-            
-            String value = json.substring(valueStart + 1, valueEnd);
-            value = value.replace("\\n", "\n").replace("\\\"", "\"").replace("\\\\", "\\");
-            return value;
-        } catch (Exception e) {
-            return null;
-        }
+    private Map<String, String> createFallbackResponse(String aiResponse) {
+        Map<String, String> result = new HashMap<>();
+        result.put("refactoredCode", "// AI did not return valid JSON format\n// Please try again or check if Ollama is running properly\n\n// AI Response:\n// " + 
+                  aiResponse.substring(0, Math.min(300, aiResponse.length())).replace("\n", "\n// "));
+        result.put("explanation", "The AI model did not follow the JSON format. Try regenerating or check your Ollama configuration.");
+        result.put("howRemoved", "Unable to provide refactoring due to response format issue.");
+        return result;
+    }
+    
+    private String decodeHtmlEntities(String text) {
+        return text
+            .replace("&quot;", "\"")
+            .replace("&#39;", "'")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&amp;", "&");
     }
 }
