@@ -18,7 +18,7 @@ public class OllamaService {
     
     public OllamaService() {
         this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(java.time.Duration.ofSeconds(30))
+                .connectTimeout(java.time.Duration.ofSeconds(10))
                 .build();
         this.objectMapper = new ObjectMapper();
     }
@@ -50,7 +50,7 @@ public class OllamaService {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(OLLAMA_URL))
                 .header("Content-Type", "application/json")
-                .timeout(java.time.Duration.ofMinutes(2))
+                .timeout(java.time.Duration.ofMinutes(5))
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .build();
         
@@ -89,14 +89,14 @@ public class OllamaService {
         }
         
         String requestBody = String.format(
-            "{\"model\": \"llama3.1:latest\", \"messages\": [{\"role\": \"system\", \"content\": \"You are a code refactoring assistant. Always respond with valid JSON only.\"}, {\"role\": \"user\", \"content\": \"%s\"}], \"stream\": false}",
+            "{\"model\": \"llama3.1:latest\", \"messages\": [{\"role\": \"system\", \"content\": \"You are a code assistant. Always return results exactly as requested. If JSON is requested, return only valid JSON with no additional text.\"}, {\"role\": \"user\", \"content\": \"%s\"}], \"stream\": false, \"options\": {\"temperature\": 0.2, \"num_predict\": 500}}",
             prompt.replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "")
         );
         
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(OLLAMA_URL))
                 .header("Content-Type", "application/json")
-                .timeout(java.time.Duration.ofMinutes(2))
+                .timeout(java.time.Duration.ofMinutes(5))
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .build();
         

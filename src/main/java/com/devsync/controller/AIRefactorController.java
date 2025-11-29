@@ -52,10 +52,11 @@ public class AIRefactorController {
                                          Integer startLine, Integer endLine, 
                                          String code, String message) {
         return String.format(
-            "Refactor this Java code to fix the %s smell.\n\n" +
+            "Return ONLY valid JSON. No text before or after the JSON object.\n\n" +
+            "Refactor this Java code to fix: %s\n\n" +
             "Code:\n%s\n\n" +
-            "Return ONLY a JSON object with these 3 fields (no other text):\n" +
-            "{\"refactoredCode\":\"...\",\"explanation\":\"...\",\"howRemoved\":\"...\"}",
+            "Output format (JSON only):\n" +
+            "{\"refactoredCode\":\"fixed code\",\"explanation\":\"what changed\",\"howRemoved\":\"how smell was fixed\"}",
             smellType, code
         );
     }
@@ -64,10 +65,13 @@ public class AIRefactorController {
         Map<String, String> result = new HashMap<>();
         
         try {
-            response = response.trim();
-            response = decodeHtmlEntities(response);
-            response = response.replaceAll("```json\\s*", "").replaceAll("```\\s*", "");
+            // Decode HTML entities first
+            response = decodeHtmlEntities(response.trim());
             
+            // Remove markdown code blocks
+            response = response.replaceAll("```json\\s*", "").replaceAll("```\\s*", "").trim();
+            
+            // Find JSON boundaries
             int jsonStart = response.indexOf("{");
             int jsonEnd = response.lastIndexOf("}");
             
