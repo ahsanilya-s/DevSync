@@ -119,7 +119,7 @@ export function VisualReport({ reportContent, isOpen, onClose, isDarkMode, proje
       
       // Parse detailed issues
       if (line.startsWith('🚨 ')) {
-        const cleanLine = line.substring(3).trim() // Remove '🚨 ' prefix (3 chars)
+        const cleanLine = line.substring(2).trim() // Remove '🚨 ' prefix (2 chars)
         
         // Match format: 🔴 [Type] file.java:123 - description
         const issueMatch = cleanLine.match(/^([🔴🟡🟠⚠️])\s+\[(\w+)\]\s+(.+?):(\d+)\s+-\s+(.+)/)
