@@ -2,6 +2,7 @@ package com.devsync.controller;
 
 import com.devsync.model.UserSettings;
 import com.devsync.repository.UserSettingsRepository;
+import com.devsync.services.AIAssistantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +14,9 @@ public class SettingsController {
     
     @Autowired
     private UserSettingsRepository userSettingsRepository;
+    
+    @Autowired
+    private AIAssistantService aiAssistantService;
     
     @GetMapping("/{userId}")
     public ResponseEntity<UserSettings> getSettings(@PathVariable String userId) {
@@ -31,18 +35,22 @@ public class SettingsController {
     @PostMapping("/{userId}/test-ai")
     public ResponseEntity<String> testAiConnection(@PathVariable String userId, @RequestBody UserSettings settings) {
         try {
-            // Test connection based on provider
             String provider = settings.getAiProvider();
-            if ("ollama".equals(provider)) {
-                return ResponseEntity.ok("Ollama connection test successful");
-            } else if ("openai".equals(provider)) {
-                return ResponseEntity.ok("OpenAI API key format valid");
-            } else if ("anthropic".equals(provider)) {
-                return ResponseEntity.ok("Anthropic API key format valid");
+            
+            if ("none".equals(provider)) {
+                return ResponseEntity.ok("✅ AI Analysis is disabled");
             }
-            return ResponseEntity.ok("AI provider configured");
+            
+            String testReport = "Test connection: No issues found in sample code.";
+            String result = aiAssistantService.analyzeWithAI(testReport, settings);
+            
+            if (result != null && !result.isEmpty()) {
+                return ResponseEntity.ok("✅ " + provider.toUpperCase() + " connection successful!\n\nSample response received.");
+            }
+            
+            return ResponseEntity.ok("⚠️ Connection established but no response received");
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Connection failed: " + e.getMessage());
+            return ResponseEntity.badRequest().body("❌ Connection failed: " + e.getMessage());
         }
     }
 }

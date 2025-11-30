@@ -180,8 +180,9 @@ public class UploadController {
             // 2) Get user settings
             UserSettings settings = userSettingsRepository.findByUserId(userId).orElse(new UserSettings(userId));
             
-            // 3) Use centralized analysis engine
+            // 3) Use centralized analysis engine with user settings
             CodeAnalysisEngine analysisEngine = new CodeAnalysisEngine();
+            analysisEngine.configureFromSettings(settings);
             Map<String, Object> analysisResults = analysisEngine.analyzeProject(targetDir);
             
             @SuppressWarnings("unchecked")

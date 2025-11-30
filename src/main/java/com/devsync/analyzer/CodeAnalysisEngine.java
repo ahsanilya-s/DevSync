@@ -15,8 +15,40 @@ public class CodeAnalysisEngine {
     
     private final Map<String, Object> detectors = new LinkedHashMap<>();
     
+    private Map<String, Boolean> enabledDetectors;
+    private Integer maxMethodLength;
+    private Integer maxParameterCount;
+    private Integer maxIdentifierLength;
+    
     public CodeAnalysisEngine() {
         initializeDetectors();
+    }
+    
+    public void configureFromSettings(com.devsync.model.UserSettings settings) {
+        if (settings == null) return;
+        
+        this.enabledDetectors = new HashMap<>();
+        enabledDetectors.put("MissingDefaultDetector", settings.getMissingDefaultEnabled());
+        enabledDetectors.put("EmptyCatchDetector", settings.getEmptyCatchEnabled());
+        enabledDetectors.put("LongMethodDetector", settings.getLongMethodEnabled());
+        enabledDetectors.put("LongParameterListDetector", settings.getLongParameterEnabled());
+        enabledDetectors.put("MagicNumberDetector", settings.getMagicNumberEnabled());
+        enabledDetectors.put("LongIdentifierDetector", settings.getLongIdentifierEnabled());
+        
+        this.maxMethodLength = settings.getMaxMethodLength();
+        this.maxParameterCount = settings.getMaxParameterCount();
+        this.maxIdentifierLength = settings.getMaxIdentifierLength();
+        
+        // Update detector configurations
+        if (detectors.get("LongMethodDetector") instanceof LongMethodDetector) {
+            ((LongMethodDetector) detectors.get("LongMethodDetector")).setMaxLength(maxMethodLength);
+        }
+        if (detectors.get("LongParameterListDetector") instanceof LongParameterListDetector) {
+            ((LongParameterListDetector) detectors.get("LongParameterListDetector")).setMaxParameters(maxParameterCount);
+        }
+        if (detectors.get("LongIdentifierDetector") instanceof LongIdentifierDetector) {
+            ((LongIdentifierDetector) detectors.get("LongIdentifierDetector")).setMaxLength(maxIdentifierLength);
+        }
     }
     
     private void initializeDetectors() {
@@ -98,7 +130,12 @@ public class CodeAnalysisEngine {
             String detectorName = entry.getKey();
             Object detector = entry.getValue();
             
-            if (!AnalysisConfig.isDetectorEnabled(detectorName, null)) {
+            // Check if detector is enabled in user settings
+            if (enabledDetectors != null && enabledDetectors.containsKey(detectorName)) {
+                if (!enabledDetectors.get(detectorName)) {
+                    continue;
+                }
+            } else if (!AnalysisConfig.isDetectorEnabled(detectorName, null)) {
                 continue;
             }
             
