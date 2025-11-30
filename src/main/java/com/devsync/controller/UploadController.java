@@ -179,6 +179,11 @@ public class UploadController {
 
             // 2) Get user settings
             UserSettings settings = userSettingsRepository.findByUserId(userId).orElse(new UserSettings(userId));
+            System.out.println("=== User Settings Loaded ===");
+            System.out.println("User ID: " + userId);
+            System.out.println("Magic Number Enabled: " + settings.getMagicNumberEnabled());
+            System.out.println("Long Method Enabled: " + settings.getLongMethodEnabled());
+            System.out.println("Empty Catch Enabled: " + settings.getEmptyCatchEnabled());
             
             // 3) Use centralized analysis engine with user settings
             CodeAnalysisEngine analysisEngine = new CodeAnalysisEngine();

@@ -25,7 +25,10 @@ public class CodeAnalysisEngine {
     }
     
     public void configureFromSettings(com.devsync.model.UserSettings settings) {
-        if (settings == null) return;
+        if (settings == null) {
+            logger.warning("Settings is null, using defaults");
+            return;
+        }
         
         this.enabledDetectors = new HashMap<>();
         enabledDetectors.put("MissingDefaultDetector", settings.getMissingDefaultEnabled());
@@ -34,6 +37,14 @@ public class CodeAnalysisEngine {
         enabledDetectors.put("LongParameterListDetector", settings.getLongParameterEnabled());
         enabledDetectors.put("MagicNumberDetector", settings.getMagicNumberEnabled());
         enabledDetectors.put("LongIdentifierDetector", settings.getLongIdentifierEnabled());
+        
+        System.out.println("=== CodeAnalysisEngine Configuration ===");
+        System.out.println("MissingDefaultDetector: " + settings.getMissingDefaultEnabled());
+        System.out.println("EmptyCatchDetector: " + settings.getEmptyCatchEnabled());
+        System.out.println("LongMethodDetector: " + settings.getLongMethodEnabled());
+        System.out.println("LongParameterListDetector: " + settings.getLongParameterEnabled());
+        System.out.println("MagicNumberDetector: " + settings.getMagicNumberEnabled());
+        System.out.println("LongIdentifierDetector: " + settings.getLongIdentifierEnabled());
         
         this.maxMethodLength = settings.getMaxMethodLength();
         this.maxParameterCount = settings.getMaxParameterCount();
@@ -132,11 +143,17 @@ public class CodeAnalysisEngine {
             
             // Check if detector is enabled in user settings
             if (enabledDetectors != null && enabledDetectors.containsKey(detectorName)) {
-                if (!enabledDetectors.get(detectorName)) {
+                Boolean isEnabled = enabledDetectors.get(detectorName);
+                if (isEnabled == null || !isEnabled) {
+                    // User explicitly disabled this detector
                     continue;
                 }
-            } else if (!AnalysisConfig.isDetectorEnabled(detectorName, null)) {
-                continue;
+                // User enabled this detector, proceed with analysis
+            } else {
+                // No user settings for this detector, check default config
+                if (!AnalysisConfig.isDetectorEnabled(detectorName, null)) {
+                    continue;
+                }
             }
             
             try {
