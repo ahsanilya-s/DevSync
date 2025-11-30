@@ -22,7 +22,7 @@ public class DeficientEncapsulationDetector {
                 String suggestions = generateSuggestions(encInfo);
                 
                 issues.add(String.format(
-                    "%s [DeficientEncapsulation] %s:%d - %s '%s' (Risk: %.2f) - %s | Suggestions: %s",
+                    "%s [DeficientEncapsulation] %s:%d - %s '%s' (Risk: %.2f) - %s | Suggestions: %s | DetailedReason: This field breaks encapsulation because it is %s, %s, and %s. Risk score: %.2f. Exposing internal state makes the class fragile and hard to maintain.",
                     severity,
                     cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
                     encInfo.lineNumber,
@@ -30,7 +30,11 @@ public class DeficientEncapsulationDetector {
                     encInfo.name,
                     riskScore,
                     analysis,
-                    suggestions
+                    suggestions,
+                    encInfo.isPublic ? "publicly accessible" : "not properly protected",
+                    encInfo.isMutable ? "mutable" : "immutable",
+                    encInfo.lacksAccessors ? "lacks proper accessor methods" : "has accessors",
+                    riskScore
                 ));
             }
         });

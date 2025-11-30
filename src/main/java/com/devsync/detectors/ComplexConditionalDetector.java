@@ -27,7 +27,7 @@ public class ComplexConditionalDetector {
                 String suggestions = generateSuggestions(condInfo);
                 
                 issues.add(String.format(
-                    "%s [ComplexConditional] %s:%d - %s (Operators: %d, Depth: %d, Score: %.2f) - %s | Suggestions: %s",
+                    "%s [ComplexConditional] %s:%d - %s (Operators: %d, Depth: %d, Score: %.2f) - %s | Suggestions: %s | DetailedReason: %s",
                     severity,
                     cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
                     condInfo.lineNumber,
@@ -36,7 +36,8 @@ public class ComplexConditionalDetector {
                     condInfo.nestingDepth,
                     complexityScore,
                     analysis,
-                    suggestions
+                    suggestions,
+                    generateDetailedReason(condInfo, complexityScore)
                 ));
             }
         });
@@ -127,6 +128,40 @@ public class ComplexConditionalDetector {
         }
         
         return String.join(", ", suggestions);
+    }
+    
+    private String generateDetailedReason(ConditionalInfo condInfo, double complexityScore) {
+        StringBuilder reason = new StringBuilder();
+        reason.append("This conditional is flagged as a code smell because: ");
+        
+        List<String> issues = new ArrayList<>();
+        
+        issues.add(String.format("it has %d logical operators (threshold: %d)", condInfo.operatorCount, BASE_COMPLEXITY_THRESHOLD));
+        
+        if (condInfo.nestingDepth > MAX_NESTING_DEPTH) {
+            issues.add(String.format("nesting depth is %d levels (max: %d)", condInfo.nestingDepth, MAX_NESTING_DEPTH));
+        }
+        
+        if (condInfo.hasNestedParentheses) {
+            issues.add("it has nested parentheses, making it hard to parse");
+        }
+        
+        if (condInfo.hasMixedOperators) {
+            issues.add("it mixes AND and OR operators without clear grouping");
+        }
+        
+        if (condInfo.hasNegations > 1) {
+            issues.add(String.format("it has %d negations, making logic harder to follow", condInfo.hasNegations));
+        }
+        
+        if (condInfo.hasMethodCalls) {
+            issues.add("it includes method calls within the condition");
+        }
+        
+        reason.append(String.join(", ", issues));
+        reason.append(String.format(". Complexity score: %.2f. Complex conditionals are error-prone and hard to test.", complexityScore));
+        
+        return reason.toString();
     }
     
     private static class ConditionalInfo {

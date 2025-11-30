@@ -32,13 +32,14 @@ public class EmptyCatchDetector {
                 String severity = getSeverity(score);
                 
                 issues.add(String.format(
-                    "%s [EmptyCatch] %s:%d - Empty catch block for %s - %s | Suggestions: %s",
+                    "%s [EmptyCatch] %s:%d - Empty catch block for %s - %s | Suggestions: %s | DetailedReason: %s",
                     severity,
                     catchInfo.fileName,
                     catchInfo.lineNumber,
                     catchInfo.exceptionType,
                     generateAnalysis(catchInfo),
-                    generateSuggestions(catchInfo)
+                    generateSuggestions(catchInfo),
+                    generateDetailedReason(catchInfo)
                 ));
             }
         });
@@ -89,6 +90,32 @@ public class EmptyCatchDetector {
     
     private String generateSuggestions(CatchInfo catchInfo) {
         return "Add logging, re-throw, or add explanatory comment";
+    }
+    
+    private String generateDetailedReason(CatchInfo catchInfo) {
+        StringBuilder reason = new StringBuilder();
+        reason.append("This catch block is flagged as a code smell because: ");
+        
+        List<String> issues = new ArrayList<>();
+        
+        issues.add("the catch block is completely empty with no error handling");
+        
+        if (CRITICAL_EXCEPTIONS.contains(catchInfo.exceptionType)) {
+            issues.add(String.format("%s is a critical exception that should never be silently ignored", catchInfo.exceptionType));
+        } else {
+            issues.add(String.format("catching %s without any action hides potential errors", catchInfo.exceptionType));
+        }
+        
+        if (!catchInfo.hasComment) {
+            issues.add("there is no comment explaining why the exception is being ignored");
+        } else if (!hasAcceptablePattern(catchInfo.comment)) {
+            issues.add("the comment does not clearly indicate intentional suppression");
+        }
+        
+        reason.append(String.join(", ", issues));
+        reason.append(". Empty catch blocks can hide bugs and make debugging extremely difficult.");
+        
+        return reason.toString();
     }
     
     private static class CatchInfo {

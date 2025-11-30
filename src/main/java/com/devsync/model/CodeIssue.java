@@ -1,5 +1,7 @@
 package com.devsync.model;
 
+import com.devsync.dto.LongMethodThresholdDetails;
+
 public class CodeIssue {
     private String type;
     private String file;
@@ -7,6 +9,8 @@ public class CodeIssue {
     private String severity;
     private String message;
     private String suggestion;
+    private String detailedReason;
+    private LongMethodThresholdDetails thresholdDetails;
 
     public CodeIssue() {}
 
@@ -36,4 +40,10 @@ public class CodeIssue {
 
     public String getSuggestion() { return suggestion; }
     public void setSuggestion(String suggestion) { this.suggestion = suggestion; }
+
+    public String getDetailedReason() { return detailedReason; }
+    public void setDetailedReason(String detailedReason) { this.detailedReason = detailedReason; }
+
+    public LongMethodThresholdDetails getThresholdDetails() { return thresholdDetails; }
+    public void setThresholdDetails(LongMethodThresholdDetails thresholdDetails) { this.thresholdDetails = thresholdDetails; }
 }

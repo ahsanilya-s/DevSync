@@ -1,5 +1,8 @@
 package com.devsync.reports;
 
+import com.devsync.grading.GradingSystem;
+import com.devsync.grading.GradingSystem.GradeResult;
+
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -42,18 +45,28 @@ public class ReportGenerator {
         Map<String, Integer> severityCounts = calculateSeverityCounts(deduplicatedIssues);
         Map<String, Integer> typeCounts = generateTypeBreakdown(deduplicatedIssues);
         
+        // Get LOC and calculate grade
+        int totalLOC = (Integer) analysisResults.getOrDefault("totalLOC", 0);
+        GradeResult gradeResult = GradingSystem.calculateGrade(severityCounts, totalLOC);
+        
+        // Add grading report
+        report.append(GradingSystem.generateGradingReport(gradeResult));
+        report.append("\n");
+        
         // Summary
         report.append("SUMMARY\n");
         report.append("-------\n");
         int totalIssues = deduplicatedIssues.size();
         int totalFiles = (Integer) analysisResults.getOrDefault("totalFiles", 0);
-        report.append(String.format("Analyzed %d files, found %d issues (%d critical, %d high, %d medium, %d low)\n\n",
+        report.append(String.format("Analyzed %d files, found %d issues (%d critical, %d high, %d medium, %d low)\n",
             totalFiles,
             totalIssues,
             severityCounts.getOrDefault("Critical", 0),
             severityCounts.getOrDefault("High", 0),
             severityCounts.getOrDefault("Medium", 0),
             severityCounts.getOrDefault("Low", 0)));
+        report.append(String.format("Lines of Code: %,d\n", totalLOC));
+        report.append(String.format("Issue Density: %.2f issues per KLOC\n\n", gradeResult.getIssueDensity()));
         
         // Severity breakdown - ensure consistent ordering
         report.append("SEVERITY BREAKDOWN\n");

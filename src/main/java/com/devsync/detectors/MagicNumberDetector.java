@@ -29,14 +29,15 @@ public class MagicNumberDetector {
                 String severity = getSeverity(riskScore);
                 
                 issues.add(String.format(
-                    "%s [MagicNumber] %s:%d - Magic number '%s' in %s - %s | Suggestions: %s",
+                    "%s [MagicNumber] %s:%d - Magic number '%s' in %s - %s | Suggestions: %s | DetailedReason: %s",
                     severity,
                     magicInfo.fileName,
                     magicInfo.lineNumber,
                     magicInfo.value,
                     magicInfo.context,
                     generateAnalysis(magicInfo),
-                    generateSuggestions(magicInfo)
+                    generateSuggestions(magicInfo),
+                    generateDetailedReason(magicInfo, riskScore)
                 ));
             }
         }
@@ -102,6 +103,44 @@ public class MagicNumberDetector {
     
     private String generateSuggestions(MagicNumberInfo magicInfo) {
         return "Extract to named constant, use enum for discrete values, document meaning";
+    }
+    
+    private String generateDetailedReason(MagicNumberInfo magicInfo, double riskScore) {
+        StringBuilder reason = new StringBuilder();
+        reason.append("This magic number is flagged as a code smell because: ");
+        
+        List<String> issues = new ArrayList<>();
+        
+        issues.add(String.format("the literal value '%s' is hardcoded without explanation", magicInfo.value));
+        
+        if (magicInfo.isRepeated) {
+            issues.add("this same number appears multiple times in the code, making updates error-prone");
+        }
+        
+        if (magicInfo.isInPublicMethod) {
+            issues.add("it's used in a public method, making the API harder to understand");
+        }
+        
+        if (magicInfo.isInBusinessLogic) {
+            issues.add("it's part of business logic where the meaning should be explicit");
+        }
+        
+        try {
+            double numValue = Double.parseDouble(magicInfo.value);
+            if (Math.abs(numValue) > 1000) {
+                issues.add(String.format("the value %.0f is large and likely represents a domain-specific constant", numValue));
+            }
+            if (numValue % 1 != 0 && Math.abs(numValue) > 1) {
+                issues.add("decimal values like this often represent important thresholds or ratios");
+            }
+        } catch (NumberFormatException e) {
+            // Ignore
+        }
+        
+        reason.append(String.join(", ", issues));
+        reason.append(String.format(". Risk score: %.2f. Magic numbers reduce code readability and make maintenance difficult.", riskScore));
+        
+        return reason.toString();
     }
     
     private static class MagicNumberInfo {

@@ -60,7 +60,7 @@ public class LongIdentifierDetector {
                 String suggestions = generateSuggestions(identifierInfo);
                 
                 issues.add(String.format(
-                    "%s [LongIdentifier] %s:%d - %s '%s' (%d chars, Complexity: %.2f) - %s | Suggestions: %s",
+                    "%s [LongIdentifier] %s:%d - %s '%s' (%d chars, Complexity: %.2f) - %s | Suggestions: %s | DetailedReason: %s",
                     severity,
                     cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
                     identifierInfo.lineNumber,
@@ -69,7 +69,8 @@ public class LongIdentifierDetector {
                     identifierInfo.length,
                     complexityScore,
                     analysis,
-                    suggestions
+                    suggestions,
+                    generateDetailedReason(identifierInfo, complexityScore)
                 ));
             }
         });
@@ -313,6 +314,45 @@ public class LongIdentifierDetector {
         suggestions.add("Use domain-specific terminology");
         
         return String.join(", ", suggestions);
+    }
+    
+    private String generateDetailedReason(IdentifierInfo identifierInfo, double complexityScore) {
+        StringBuilder reason = new StringBuilder();
+        reason.append(String.format("This %s identifier is flagged as a code smell because: ", identifierInfo.type));
+        
+        List<String> issues = new ArrayList<>();
+        
+        int threshold = getThresholdForType(identifierInfo.type);
+        issues.add(String.format("it has %d characters (threshold: %d)", identifierInfo.length, threshold));
+        
+        if (identifierInfo.wordCount > 4) {
+            issues.add(String.format("it contains %d words, making it hard to read", identifierInfo.wordCount));
+        }
+        
+        if (hasRepeatedWords(identifierInfo.name)) {
+            issues.add("it has repeated words, indicating redundancy");
+        }
+        
+        if (hasUnnecessaryWords(identifierInfo.name)) {
+            issues.add("it contains filler words like 'data', 'info', or 'object' that add no meaning");
+        }
+        
+        if (identifierInfo.acronymCount > 2) {
+            issues.add(String.format("it has %d acronyms, reducing clarity", identifierInfo.acronymCount));
+        }
+        
+        if (hasVagueNaming(identifierInfo.name.toLowerCase())) {
+            issues.add("it uses vague terms like 'manager' or 'handler' instead of specific names");
+        }
+        
+        if (identifierInfo.isPublic) {
+            issues.add("it's part of the public API, where clarity is critical");
+        }
+        
+        reason.append(String.join(", ", issues));
+        reason.append(String.format(". Complexity score: %.2f. Long identifiers reduce code readability and increase cognitive load.", complexityScore));
+        
+        return reason.toString();
     }
     
     private static class IdentifierInfo {

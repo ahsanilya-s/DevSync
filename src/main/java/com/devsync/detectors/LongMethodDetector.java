@@ -55,14 +55,15 @@ public class LongMethodDetector {
             String severity = getSeverity(score);
 
             issues.add(String.format(
-                    "%s [LongMethod] %s:%d - '%s' (%d statements) - %s | Suggestions: %s",
+                    "%s [LongMethod] %s:%d - '%s' (%d statements) - %s | Suggestions: %s | DetailedReason: %s",
                     severity,
                     m.fileName,
                     m.lineNumber,
                     m.methodName,
                     m.lineCount,
                     generateAnalysis(m),
-                    generateSuggestions(m)
+                    generateSuggestions(m),
+                    generateDetailedReason(m)
             ));
         }
 
@@ -137,6 +138,55 @@ public class LongMethodDetector {
 
     private String generateSuggestions(MethodInfo m) {
         return "Split logic into smaller methods, reduce branching, simplify nested blocks";
+    }
+
+    private String generateDetailedReason(MethodInfo m) {
+        StringBuilder reason = new StringBuilder();
+        reason.append("This method was flagged because: ");
+        
+        List<String> violations = new ArrayList<>();
+        
+        // Check line count
+        if (m.lineCount > criticalLineThreshold) {
+            violations.add(String.format("Statement count is %d (exceeds critical threshold of %d)", m.lineCount, criticalLineThreshold));
+        } else if (m.lineCount > baseLineThreshold) {
+            violations.add(String.format("Statement count is %d (exceeds base threshold of %d)", m.lineCount, baseLineThreshold));
+        } else {
+            violations.add(String.format("Statement count is %d (within threshold of %d)", m.lineCount, baseLineThreshold));
+        }
+        
+        // Check cyclomatic complexity
+        if (m.cyclomaticComplexity > MAX_CYCLOMATIC_COMPLEXITY) {
+            violations.add(String.format("Cyclomatic complexity is %d (exceeds max of %d - too many decision points like if/for/while)", m.cyclomaticComplexity, MAX_CYCLOMATIC_COMPLEXITY));
+        } else {
+            violations.add(String.format("Cyclomatic complexity is %d (within max of %d)", m.cyclomaticComplexity, MAX_CYCLOMATIC_COMPLEXITY));
+        }
+        
+        // Check cognitive complexity
+        if (m.cognitiveComplexity > MAX_COGNITIVE_COMPLEXITY) {
+            violations.add(String.format("Cognitive complexity is %d (exceeds max of %d - too hard to understand)", m.cognitiveComplexity, MAX_COGNITIVE_COMPLEXITY));
+        } else {
+            violations.add(String.format("Cognitive complexity is %d (within max of %d)", m.cognitiveComplexity, MAX_COGNITIVE_COMPLEXITY));
+        }
+        
+        // Check nesting depth
+        if (m.nestingDepth > MAX_NESTING_DEPTH) {
+            violations.add(String.format("Nesting depth is %d levels (exceeds max of %d - deeply nested code is hard to follow)", m.nestingDepth, MAX_NESTING_DEPTH));
+        } else {
+            violations.add(String.format("Nesting depth is %d levels (within max of %d)", m.nestingDepth, MAX_NESTING_DEPTH));
+        }
+        
+        // Check responsibilities
+        if (m.responsibilityCount > 3) {
+            violations.add(String.format("Handles %d different responsibilities (exceeds max of 3 - violates Single Responsibility Principle)", m.responsibilityCount));
+        } else {
+            violations.add(String.format("Handles %d responsibilities (within max of 3)", m.responsibilityCount));
+        }
+        
+        reason.append(String.join("; ", violations));
+        reason.append(". A method is flagged when ANY of these thresholds is exceeded.");
+        
+        return reason.toString();
     }
 
     /*───────────────────────────────────────────────────────────────*/

@@ -29,7 +29,7 @@ public class LongStatementDetector {
                 String severity = getSeverity(score);
                 
                 issues.add(String.format(
-                    "%s [LongStatement] %s:%d - %s (%d tokens, %d chars) - %s | Suggestions: %s",
+                    "%s [LongStatement] %s:%d - %s (%d tokens, %d chars) - %s | Suggestions: %s | DetailedReason: %s",
                     severity,
                     stmtInfo.fileName,
                     stmtInfo.lineNumber,
@@ -37,7 +37,8 @@ public class LongStatementDetector {
                     stmtInfo.tokenCount,
                     stmtInfo.charLength,
                     generateAnalysis(stmtInfo),
-                    generateSuggestions(stmtInfo)
+                    generateSuggestions(stmtInfo),
+                    generateDetailedReason(stmtInfo, score)
                 ));
             }
         });
@@ -94,6 +95,38 @@ public class LongStatementDetector {
             return "Extract sub-expressions to variables";
         }
         return "Split into multiple statements";
+    }
+    
+    private String generateDetailedReason(StatementInfo stmtInfo, double score) {
+        StringBuilder reason = new StringBuilder();
+        reason.append("This statement is flagged as a code smell because: ");
+        
+        List<String> issues = new ArrayList<>();
+        
+        if (stmtInfo.tokenCount >= BASE_TOKEN_THRESHOLD) {
+            issues.add(String.format("it has %d tokens (threshold: %d)", stmtInfo.tokenCount, BASE_TOKEN_THRESHOLD));
+        }
+        
+        if (stmtInfo.charLength >= BASE_CHAR_THRESHOLD) {
+            issues.add(String.format("it is %d characters long (threshold: %d)", stmtInfo.charLength, BASE_CHAR_THRESHOLD));
+        }
+        
+        if (stmtInfo.expressionComplexity > 8) {
+            issues.add(String.format("expression complexity is %d, making it hard to understand", stmtInfo.expressionComplexity));
+        }
+        
+        if (stmtInfo.methodChainLength > 4) {
+            issues.add(String.format("it has a method chain of %d calls, reducing readability", stmtInfo.methodChainLength));
+        }
+        
+        if (stmtInfo.nestingDepth > 2) {
+            issues.add(String.format("it's nested %d levels deep, adding to complexity", stmtInfo.nestingDepth));
+        }
+        
+        reason.append(String.join(", ", issues));
+        reason.append(String.format(". Complexity score: %.2f. Long statements are harder to read, debug, and maintain.", score));
+        
+        return reason.toString();
     }
     
     private static class StatementInfo {

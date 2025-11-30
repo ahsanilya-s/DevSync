@@ -24,14 +24,19 @@ public class BrokenModularizationDetector {
                 String severity = getSeverity(score);
                 
                 issues.add(String.format(
-                    "%s [BrokenModularization] %s:%d - %s '%s' - %s | Suggestions: %s",
+                    "%s [BrokenModularization] %s:%d - %s '%s' - %s | Suggestions: %s | DetailedReason: This %s has broken modularization with %d responsibilities, cohesion index of %.2f, and coupling count of %d. %s",
                     severity,
                     modInfo.fileName,
                     modInfo.lineNumber,
                     modInfo.type,
                     modInfo.name,
                     generateAnalysis(modInfo),
-                    generateSuggestions(modInfo)
+                    generateSuggestions(modInfo),
+                    modInfo.type.toLowerCase(),
+                    modInfo.responsibilityCount,
+                    modInfo.cohesionIndex,
+                    modInfo.couplingCount,
+                    modInfo.hasMixedConcerns ? "It mixes unrelated concerns." : "It violates Single Responsibility Principle."
                 ));
             }
         });

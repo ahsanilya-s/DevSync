@@ -53,7 +53,7 @@ public class LongParameterListDetector {
                 String suggestions = generateSuggestions(paramInfo);
                 
                 issues.add(String.format(
-                    "%s [LongParameterList] %s:%d - %s '%s' (%d params, Complexity: %.2f) - %s | Suggestions: %s",
+                    "%s [LongParameterList] %s:%d - %s '%s' (%d params, Complexity: %.2f) - %s | Suggestions: %s | DetailedReason: %s",
                     severity,
                     cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
                     paramInfo.lineNumber,
@@ -62,7 +62,8 @@ public class LongParameterListDetector {
                     paramInfo.parameterCount,
                     complexityScore,
                     analysis,
-                    suggestions
+                    suggestions,
+                    generateDetailedReason(paramInfo, complexityScore)
                 ));
             }
         });
@@ -245,6 +246,40 @@ public class LongParameterListDetector {
         suggestions.add("Consider dependency injection");
         
         return String.join(", ", suggestions);
+    }
+    
+    private String generateDetailedReason(ParameterInfo paramInfo, double complexityScore) {
+        StringBuilder reason = new StringBuilder();
+        reason.append(String.format("This %s is flagged as a code smell because: ", 
+            paramInfo.isConstructor ? "constructor" : "method"));
+        
+        List<String> issues = new ArrayList<>();
+        
+        int threshold = paramInfo.isConstructor ? constructorThreshold : baseParameterThreshold;
+        issues.add(String.format("it has %d parameters (threshold: %d)", 
+            paramInfo.parameterCount, threshold));
+        
+        if (paramInfo.primitiveCount > paramInfo.parameterCount * 0.7) {
+            issues.add(String.format("%d out of %d parameters are primitives, indicating primitive obsession", 
+                paramInfo.primitiveCount, paramInfo.parameterCount));
+        }
+        
+        if (paramInfo.hasConsecutiveSameTypes) {
+            issues.add("consecutive parameters have the same type, increasing the risk of passing arguments in wrong order");
+        }
+        
+        if (paramInfo.lacksCohesion) {
+            issues.add("parameters appear unrelated, suggesting the method may have multiple responsibilities");
+        }
+        
+        if (paramInfo.hasComplexTypes) {
+            issues.add("some parameters have complex generic types, adding to cognitive load");
+        }
+        
+        reason.append(String.join(", ", issues));
+        reason.append(String.format(". Complexity score: %.2f. Long parameter lists make methods harder to understand, test, and maintain.", complexityScore));
+        
+        return reason.toString();
     }
     
     private static class ParameterInfo {

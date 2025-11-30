@@ -97,6 +97,7 @@ public class CodeAnalysisEngine {
         List<File> javaFiles = collector.collectJavaFiles(projectPath);
         
         int processedFiles = 0;
+        int totalLOC = 0;
         for (File file : javaFiles) {
             if (AnalysisConfig.shouldExclude(file.getPath())) {
                 continue;
@@ -113,6 +114,10 @@ public class CodeAnalysisEngine {
                     List<String> fileIssues = analyzeFile(cu, file.getName(), detectorCounts);
                     allIssues.addAll(fileIssues);
                     updateSeverityCounts(fileIssues, severityCounts);
+                    
+                    // Count lines of code
+                    totalLOC += LOCCounter.countLinesOfCode(cu);
+                    
                     processedFiles++;
                 } else {
                     String errors = parseResult.getProblems().toString();
@@ -129,6 +134,7 @@ public class CodeAnalysisEngine {
         results.put("totalIssues", allIssues.size());
         results.put("severityCounts", severityCounts);
         results.put("detectorCounts", detectorCounts);
+        results.put("totalLOC", totalLOC);
         results.put("summary", generateSummary(severityCounts, processedFiles));
         
         return results;

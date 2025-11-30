@@ -22,7 +22,7 @@ public class UnnecessaryAbstractionDetector {
                 String suggestions = generateSuggestions(absInfo);
                 
                 issues.add(String.format(
-                    "%s [UnnecessaryAbstraction] %s:%d - %s '%s' (Score: %.2f) - %s | Suggestions: %s",
+                    "%s [UnnecessaryAbstraction] %s:%d - %s '%s' (Score: %.2f) - %s | Suggestions: %s | DetailedReason: This abstraction is unnecessary because it is used only %d time(s), %s, and %s. Complexity score: %.2f. Unnecessary abstractions add complexity without benefit.",
                     severity,
                     cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
                     absInfo.lineNumber,
@@ -30,7 +30,11 @@ public class UnnecessaryAbstractionDetector {
                     absInfo.name,
                     complexityScore,
                     analysis,
-                    suggestions
+                    suggestions,
+                    absInfo.usageCount,
+                    absInfo.hasOnlyOneImplementation ? "has only one implementation" : "has multiple implementations",
+                    absInfo.isSimpleWrapper ? "acts as a simple wrapper" : "provides meaningful abstraction",
+                    complexityScore
                 ));
             }
         });
