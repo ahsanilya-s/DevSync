@@ -11,6 +11,7 @@ public class CodeIssue {
     private String suggestion;
     private String detailedReason;
     private LongMethodThresholdDetails thresholdDetails;
+    private String thresholdDetailsJson;
 
     public CodeIssue() {}
 
@@ -46,4 +47,7 @@ public class CodeIssue {
 
     public LongMethodThresholdDetails getThresholdDetails() { return thresholdDetails; }
     public void setThresholdDetails(LongMethodThresholdDetails thresholdDetails) { this.thresholdDetails = thresholdDetails; }
+
+    public String getThresholdDetailsJson() { return thresholdDetailsJson; }
+    public void setThresholdDetailsJson(String thresholdDetailsJson) { this.thresholdDetailsJson = thresholdDetailsJson; }
 }

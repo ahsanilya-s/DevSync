@@ -82,11 +82,12 @@ public class HighlightMapperService {
             String fileName = extractFileName(filePath);
             int lineNumber = Integer.parseInt(fileLineMatcher.group(2));
             
-            // Extract message, suggestion, and detailed reason
+            // Extract message, suggestion, detailed reason, and threshold details
             String remaining = afterType.substring(fileLineMatcher.end()).trim();
             String message = "";
             String suggestion = "";
             String detailedReason = "";
+            String thresholdDetailsJson = "";
             
             if (remaining.startsWith("-")) {
                 remaining = remaining.substring(1).trim();
@@ -99,6 +100,8 @@ public class HighlightMapperService {
                         suggestion = part.substring(12).trim();
                     } else if (part.startsWith("DetailedReason:")) {
                         detailedReason = part.substring(15).trim();
+                    } else if (part.startsWith("ThresholdDetails:")) {
+                        thresholdDetailsJson = part.substring(17).trim();
                     }
                 }
             }
@@ -106,8 +109,14 @@ public class HighlightMapperService {
             CodeIssue issue = new CodeIssue(type, fileName, lineNumber, severity, message, suggestion);
             issue.setDetailedReason(detailedReason);
             
+            // Parse threshold details for LongMethod from detailedReason (legacy)
             if ("LongMethod".equals(type) && detailedReason != null && !detailedReason.isEmpty()) {
                 issue.setThresholdDetails(parseThresholdDetails(detailedReason));
+            }
+            
+            // Parse threshold details from JSON for all other detectors
+            if (thresholdDetailsJson != null && !thresholdDetailsJson.isEmpty()) {
+                issue.setThresholdDetailsJson(thresholdDetailsJson);
             }
             
             return issue;

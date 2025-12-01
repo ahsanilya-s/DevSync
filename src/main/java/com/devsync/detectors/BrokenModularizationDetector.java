@@ -34,7 +34,7 @@ public class BrokenModularizationDetector {
             String severity = getSeverity(score);
             
             issues.add(String.format(
-                "%s [BrokenModularization] %s:%d - %s '%s' - %s | Suggestions: %s | DetailedReason: This %s has broken modularization with %d responsibilities, cohesion index of %.2f, and coupling count of %d. %s",
+                "%s [BrokenModularization] %s:%d - %s '%s' - %s | Suggestions: %s | DetailedReason: This %s has broken modularization with %d responsibilities, cohesion index of %.2f, and coupling count of %d. %s | ThresholdDetails: {\"responsibilityCount\":%d,\"threshold\":3,\"cohesionIndex\":%.2f,\"minCohesion\":0.4,\"couplingCount\":%d,\"maxCoupling\":6,\"hasMixedConcerns\":%b,\"exceedsResponsibilities\":%b,\"lowCohesion\":%b,\"highCoupling\":%b,\"summary\":\"Classes are flagged when responsibilities > 3 OR cohesion < 0.4 OR coupling > 6.\"}" ,
                 severity,
                 modInfo.fileName,
                 modInfo.lineNumber,
@@ -46,7 +46,8 @@ public class BrokenModularizationDetector {
                 modInfo.responsibilityCount,
                 modInfo.cohesionIndex,
                 modInfo.couplingCount,
-                modInfo.hasMixedConcerns ? "It mixes unrelated concerns." : "It violates Single Responsibility Principle."
+                modInfo.hasMixedConcerns ? "It mixes unrelated concerns." : "It violates Single Responsibility Principle.",
+                modInfo.responsibilityCount, modInfo.cohesionIndex, modInfo.couplingCount, modInfo.hasMixedConcerns, modInfo.responsibilityCount > 3, modInfo.cohesionIndex < 0.4, modInfo.couplingCount > 6
             ));
         });
         

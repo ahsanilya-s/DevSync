@@ -38,7 +38,7 @@ public class LongIdentifierDetector {
             String suggestions = generateSuggestions(identifierInfo);
             
             issues.add(String.format(
-                "%s [LongIdentifier] %s:%d - %s '%s' (%d chars, Complexity: %.2f) - %s | Suggestions: %s | DetailedReason: %s",
+                "%s [LongIdentifier] %s:%d - %s '%s' (%d chars, Complexity: %.2f) - %s | Suggestions: %s | DetailedReason: %s | ThresholdDetails: {\"identifierLength\":%d,\"threshold\":%d,\"type\":\"%s\",\"wordCount\":%d,\"complexityScore\":%.2f,\"exceedsThreshold\":true,\"summary\":\"Identifiers are flagged when length >= threshold (method: 30, variable: 20, class: 35).\"}" ,
                 severity,
                 cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
                 identifierInfo.lineNumber,
@@ -48,7 +48,8 @@ public class LongIdentifierDetector {
                 complexityScore,
                 analysis,
                 suggestions,
-                generateDetailedReason(identifierInfo, complexityScore)
+                generateDetailedReason(identifierInfo, complexityScore),
+                identifierInfo.length, threshold, identifierInfo.type, identifierInfo.wordCount, complexityScore
             ));
         });
         

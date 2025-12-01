@@ -39,7 +39,7 @@ public class MissingDefaultDetector {
             String suggestions = generateSuggestions(switchInfo);
             
             issues.add(String.format(
-                "%s [MissingDefault] %s:%d - Switch on '%s' (%d cases, Risk: %.2f) - %s | Suggestions: %s | DetailedReason: %s",
+                "%s [MissingDefault] %s:%d - Switch on '%s' (%d cases, Risk: %.2f) - %s | Suggestions: %s | DetailedReason: %s | ThresholdDetails: {\"caseCount\":%d,\"hasDefaultCase\":false,\"isEnumSwitch\":%b,\"enumValueCount\":%d,\"hasReturnValue\":%b,\"isInPublicMethod\":%b,\"riskScore\":%.2f,\"summary\":\"Switch statements are ALWAYS flagged when missing default case.\"}" ,
                 severity,
                 cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
                 switchInfo.lineNumber,
@@ -48,7 +48,8 @@ public class MissingDefaultDetector {
                 riskScore,
                 analysis,
                 suggestions,
-                generateDetailedReason(switchInfo, riskScore)
+                generateDetailedReason(switchInfo, riskScore),
+                switchInfo.caseCount, switchInfo.isEnumSwitch, switchInfo.enumValueCount, switchInfo.hasReturnValue, switchInfo.isInPublicMethod, riskScore
             ));
         });
         

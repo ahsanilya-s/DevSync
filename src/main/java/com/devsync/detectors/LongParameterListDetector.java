@@ -57,7 +57,7 @@ public class LongParameterListDetector {
             String suggestions = generateSuggestions(paramInfo);
             
             issues.add(String.format(
-                "%s [LongParameterList] %s:%d - %s '%s' (%d params, Complexity: %.2f) - %s | Suggestions: %s | DetailedReason: %s",
+                "%s [LongParameterList] %s:%d - %s '%s' (%d params, Complexity: %.2f) - %s | Suggestions: %s | DetailedReason: %s | ThresholdDetails: {\"parameterCount\":%d,\"threshold\":%d,\"criticalThreshold\":%d,\"primitiveCount\":%d,\"totalParams\":%d,\"hasConsecutiveSameTypes\":%b,\"lacksCohesion\":%b,\"hasComplexTypes\":%b,\"complexityScore\":%.2f,\"exceedsThreshold\":%b,\"summary\":\"A method is flagged when parameter count >= threshold (%d).\"}",
                 severity,
                 cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
                 paramInfo.lineNumber,
@@ -67,7 +67,18 @@ public class LongParameterListDetector {
                 complexityScore,
                 analysis,
                 suggestions,
-                generateDetailedReason(paramInfo, complexityScore)
+                generateDetailedReason(paramInfo, complexityScore),
+                paramInfo.parameterCount,
+                threshold,
+                criticalParameterThreshold,
+                paramInfo.primitiveCount,
+                paramInfo.parameterCount,
+                paramInfo.hasConsecutiveSameTypes,
+                paramInfo.lacksCohesion,
+                paramInfo.hasComplexTypes,
+                complexityScore,
+                paramInfo.parameterCount >= threshold,
+                threshold
             ));
         });
         

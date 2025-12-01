@@ -36,7 +36,7 @@ public class MagicNumberDetector {
             String severity = getSeverity(riskScore);
             
             issues.add(String.format(
-                "%s [MagicNumber] %s:%d - Magic number '%s' in %s - %s | Suggestions: %s | DetailedReason: %s",
+                "%s [MagicNumber] %s:%d - Magic number '%s' in %s - %s | Suggestions: %s | DetailedReason: %s | ThresholdDetails: {\"value\":\"%s\",\"isAcceptable\":false,\"isInTestMethod\":%b,\"isConstant\":false,\"isRepeated\":%b,\"isInBusinessLogic\":%b,\"riskScore\":%.2f,\"summary\":\"Magic numbers are flagged when NOT in acceptable list [0,1,-1,2,100,1000].\"}" ,
                 severity,
                 magicInfo.fileName,
                 magicInfo.lineNumber,
@@ -44,7 +44,8 @@ public class MagicNumberDetector {
                 magicInfo.context,
                 generateAnalysis(magicInfo),
                 generateSuggestions(magicInfo),
-                generateDetailedReason(magicInfo, riskScore)
+                generateDetailedReason(magicInfo, riskScore),
+                magicInfo.value, magicInfo.isInTestMethod, magicInfo.isRepeated, magicInfo.isInBusinessLogic, riskScore
             ));
         }
         

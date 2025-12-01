@@ -39,7 +39,7 @@ public class LongStatementDetector {
             String severity = getSeverity(score);
             
             issues.add(String.format(
-                "%s [LongStatement] %s:%d - %s (%d tokens, %d chars) - %s | Suggestions: %s | DetailedReason: %s",
+                "%s [LongStatement] %s:%d - %s (%d tokens, %d chars) - %s | Suggestions: %s | DetailedReason: %s | ThresholdDetails: {\"tokenCount\":%d,\"tokenThreshold\":%d,\"charLength\":%d,\"charThreshold\":%d,\"expressionComplexity\":%d,\"methodChainLength\":%d,\"exceedsTokenThreshold\":%b,\"exceedsCharThreshold\":%b,\"summary\":\"Statements are flagged when token count >= 20 AND char length >= 150.\"}" ,
                 severity,
                 stmtInfo.fileName,
                 stmtInfo.lineNumber,
@@ -48,7 +48,8 @@ public class LongStatementDetector {
                 stmtInfo.charLength,
                 generateAnalysis(stmtInfo),
                 generateSuggestions(stmtInfo),
-                generateDetailedReason(stmtInfo, score)
+                generateDetailedReason(stmtInfo, score),
+                stmtInfo.tokenCount, BASE_TOKEN_THRESHOLD, stmtInfo.charLength, BASE_CHAR_THRESHOLD, stmtInfo.expressionComplexity, stmtInfo.methodChainLength, stmtInfo.tokenCount >= BASE_TOKEN_THRESHOLD, stmtInfo.charLength >= BASE_CHAR_THRESHOLD
             ));
         });
         

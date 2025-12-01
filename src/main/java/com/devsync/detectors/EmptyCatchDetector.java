@@ -36,14 +36,15 @@ public class EmptyCatchDetector {
             String severity = getSeverity(score);
             
             issues.add(String.format(
-                "%s [EmptyCatch] %s:%d - Empty catch block for %s - %s | Suggestions: %s | DetailedReason: %s",
+                "%s [EmptyCatch] %s:%d - Empty catch block for %s - %s | Suggestions: %s | DetailedReason: %s | ThresholdDetails: {\"exceptionType\":\"%s\",\"isCriticalException\":%b,\"hasComment\":%b,\"hasAcceptablePattern\":%b,\"riskScore\":%.2f,\"summary\":\"Empty catch blocks are ALWAYS flagged as code smells.\"}" ,
                 severity,
                 catchInfo.fileName,
                 catchInfo.lineNumber,
                 catchInfo.exceptionType,
                 generateAnalysis(catchInfo),
                 generateSuggestions(catchInfo),
-                generateDetailedReason(catchInfo)
+                generateDetailedReason(catchInfo),
+                catchInfo.exceptionType, CRITICAL_EXCEPTIONS.contains(catchInfo.exceptionType), catchInfo.hasComment, catchInfo.hasComment && hasAcceptablePattern(catchInfo.comment), score
             ));
         });
         

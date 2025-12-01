@@ -33,7 +33,7 @@ public class ComplexConditionalDetector {
             String suggestions = generateSuggestions(condInfo);
             
             issues.add(String.format(
-                "%s [ComplexConditional] %s:%d - %s (Operators: %d, Depth: %d, Score: %.2f) - %s | Suggestions: %s | DetailedReason: %s",
+                "%s [ComplexConditional] %s:%d - %s (Operators: %d, Depth: %d, Score: %.2f) - %s | Suggestions: %s | DetailedReason: %s | ThresholdDetails: {\"operatorCount\":%d,\"threshold\":%d,\"nestingDepth\":%d,\"maxNestingDepth\":%d,\"hasMethodCalls\":%b,\"hasMixedOperators\":%b,\"hasNegations\":%d,\"complexityScore\":%.2f,\"exceedsOperatorThreshold\":%b,\"exceedsNestingThreshold\":%b,\"summary\":\"Conditionals are flagged when operator count >= 4 OR nesting depth > 3.\"}" ,
                 severity,
                 cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
                 condInfo.lineNumber,
@@ -43,7 +43,8 @@ public class ComplexConditionalDetector {
                 complexityScore,
                 analysis,
                 suggestions,
-                generateDetailedReason(condInfo, complexityScore)
+                generateDetailedReason(condInfo, complexityScore),
+                condInfo.operatorCount, BASE_COMPLEXITY_THRESHOLD, condInfo.nestingDepth, MAX_NESTING_DEPTH, condInfo.hasMethodCalls, condInfo.hasMixedOperators, condInfo.hasNegations, complexityScore, condInfo.operatorCount >= BASE_COMPLEXITY_THRESHOLD, condInfo.nestingDepth > MAX_NESTING_DEPTH
             ));
         });
         

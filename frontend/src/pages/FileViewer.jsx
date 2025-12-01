@@ -6,6 +6,69 @@ import { ArrowLeft, AlertCircle, Loader2 } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import api from '../api'
 
+function GenericMetricsDisplay({ details, isDarkMode }) {
+  const formatKey = (key) => {
+    return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())
+  }
+
+  const formatValue = (value) => {
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+    if (typeof value === 'number') return value.toFixed(2).replace(/\.?0+$/, '')
+    return String(value)
+  }
+
+  const isExceededKey = (key) => key.toLowerCase().includes('exceeds') || key.toLowerCase().includes('threshold')
+  const isNegativeIndicator = (key, value) => {
+    if (key.toLowerCase().includes('exceeds') && value === true) return true
+    if (key.toLowerCase().includes('low') && value === true) return true
+    if (key.toLowerCase().includes('high') && value === true) return true
+    if (key.toLowerCase().includes('lacks') && value === true) return true
+    if (key.toLowerCase().includes('critical') && value === true) return true
+    if (key.toLowerCase().includes('mixed') && value === true) return true
+    return false
+  }
+
+  const entries = Object.entries(details).filter(([key]) => key !== 'summary')
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {entries.map(([key, value]) => {
+          const isNegative = isNegativeIndicator(key, value)
+          
+          return (
+            <div
+              key={key}
+              className={`p-3 rounded-lg ${
+                isNegative
+                  ? isDarkMode ? 'bg-red-900/30 border border-red-700' : 'bg-red-50 border border-red-300'
+                  : isDarkMode ? 'bg-green-900/30 border border-green-700' : 'bg-green-50 border border-green-300'
+              }`}
+            >
+              <div className="text-xs font-semibold uppercase tracking-wide mb-1">
+                {isNegative ? '❌' : '✅'} {formatKey(key)}
+              </div>
+              <div className="text-lg font-bold">
+                {formatValue(value)}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      
+      {details.summary && (
+        <div className={`p-3 rounded-lg text-center ${
+          isDarkMode ? 'bg-blue-900/30 border border-blue-700' : 'bg-blue-100 border border-blue-300'
+        }`}>
+          <p className={`text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+            💡 {details.summary}
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function FileViewer() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -382,7 +445,9 @@ export default function FileViewer() {
                               <span>Why is this a code smell?</span>
                             </h4>
                             
-                            {issue.type === 'LongMethod' && issue.thresholdDetails ? (
+                            {issue.thresholdDetailsJson ? (
+                              <GenericMetricsDisplay details={JSON.parse(issue.thresholdDetailsJson)} isDarkMode={isDarkMode} />
+                            ) : issue.type === 'LongMethod' && issue.thresholdDetails ? (
                               <div className="space-y-3">
                                 <div className={`grid grid-cols-1 md:grid-cols-2 gap-3`}>
                                   <div className={`p-3 rounded-lg ${
