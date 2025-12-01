@@ -117,6 +117,12 @@ public class CodeAnalysisEngine {
         
         int processedFiles = 0;
         int totalLOC = 0;
+        int totalClasses = 0;
+        int totalMethods = 0;
+        int largeClasses = 0;
+        int totalComplexity = 0;
+        Set<String> packages = new HashSet<>();
+        
         for (File file : javaFiles) {
             if (AnalysisConfig.shouldExclude(file.getPath())) {
                 continue;
@@ -135,7 +141,28 @@ public class CodeAnalysisEngine {
                     updateSeverityCounts(fileIssues, severityCounts);
                     
                     // Count lines of code
-                    totalLOC += LOCCounter.countLinesOfCode(cu);
+                    int fileLOC = LOCCounter.countLinesOfCode(cu);
+                    totalLOC += fileLOC;
+                    
+                    // Count classes and methods
+                    int fileClasses = cu.findAll(com.github.javaparser.ast.body.ClassOrInterfaceDeclaration.class).size();
+                    totalClasses += fileClasses;
+                    
+                    int fileMethods = cu.findAll(com.github.javaparser.ast.body.MethodDeclaration.class).size();
+                    totalMethods += fileMethods;
+                    
+                    // Count large classes (>500 LOC)
+                    if (fileLOC > 500 && fileClasses > 0) {
+                        largeClasses++;
+                    }
+                    
+                    // Calculate complexity
+                    totalComplexity += cu.findAll(com.github.javaparser.ast.stmt.IfStmt.class).size() +
+                                      cu.findAll(com.github.javaparser.ast.stmt.ForStmt.class).size() +
+                                      cu.findAll(com.github.javaparser.ast.stmt.WhileStmt.class).size();
+                    
+                    // Extract package
+                    cu.getPackageDeclaration().ifPresent(pkg -> packages.add(pkg.getNameAsString()));
                     
                     processedFiles++;
                 } else {
@@ -163,6 +190,11 @@ public class CodeAnalysisEngine {
         results.put("severityCounts", severityCounts);
         results.put("detectorCounts", detectorCounts);
         results.put("totalLOC", totalLOC);
+        results.put("totalClasses", totalClasses);
+        results.put("totalMethods", totalMethods);
+        results.put("totalPackages", packages.size());
+        results.put("largeClasses", largeClasses);
+        results.put("avgComplexity", totalClasses > 0 ? (double) totalComplexity / totalClasses : 0.0);
         results.put("summary", generateSummary(severityCounts, processedFiles));
         
         return results;

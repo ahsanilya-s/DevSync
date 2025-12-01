@@ -207,6 +207,49 @@ export function EnhancedVisualReport({ reportContent, isOpen, onClose, isDarkMod
         sampleIssue: issues[0]
       })
 
+      // Extract project metrics from report or calculate from summary
+      let totalLOC = 0, totalClasses = 0, totalPackages = 0, avgComplexity = 0, largeClasses = 0
+      let totalMethods = 0, avgMethodsPerClass = 0, avgClassSize = 0
+      
+      // Try to extract from PROJECT METRICS section first
+      const metricsSection = content.split('PROJECT METRICS')[1]?.split('\n\n')[0]
+      if (metricsSection) {
+        const locMatch = metricsSection.match(/Total Lines of Code\s*:\s*([\d,]+)/)
+        const classesMatch = metricsSection.match(/Total Classes\s*:\s*(\d+)/)
+        const packagesMatch = metricsSection.match(/Total Packages\s*:\s*(\d+)/)
+        const complexityMatch = metricsSection.match(/Average Complexity\s*:\s*([\d.]+)/)
+        const largeClassesMatch = metricsSection.match(/Large Classes.*?:\s*(\d+)/)
+        const methodsMatch = metricsSection.match(/Total Methods\s*:\s*(\d+)/)
+        const avgMethodsMatch = metricsSection.match(/Average Methods\/Class\s*:\s*([\d.]+)/)
+        const avgSizeMatch = metricsSection.match(/Average Class Size\s*:\s*([\d.]+)/)
+        
+        if (locMatch) totalLOC = parseInt(locMatch[1].replace(/,/g, ''))
+        if (classesMatch) totalClasses = parseInt(classesMatch[1])
+        if (packagesMatch) totalPackages = parseInt(packagesMatch[1])
+        if (complexityMatch) avgComplexity = parseFloat(complexityMatch[1])
+        if (largeClassesMatch) largeClasses = parseInt(largeClassesMatch[1])
+        if (methodsMatch) totalMethods = parseInt(methodsMatch[1])
+        if (avgMethodsMatch) avgMethodsPerClass = parseFloat(avgMethodsMatch[1])
+        if (avgSizeMatch) avgClassSize = parseFloat(avgSizeMatch[1])
+      } else {
+        // Fallback: extract from SUMMARY section
+        const summaryMatch = content.match(/Lines of Code:\s*([\d,]+)/)
+        if (summaryMatch) {
+          totalLOC = parseInt(summaryMatch[1].replace(/,/g, ''))
+        }
+        
+        // Estimate other metrics from file count
+        if (totalFiles > 0) {
+          totalClasses = Math.round(totalFiles * 0.8) // Estimate: ~80% of files have classes
+          totalMethods = Math.round(totalClasses * 5) // Estimate: ~5 methods per class
+          avgClassSize = totalLOC > 0 && totalClasses > 0 ? Math.round(totalLOC / totalClasses) : 0
+          avgMethodsPerClass = totalClasses > 0 ? Math.round((totalMethods / totalClasses) * 10) / 10 : 0
+          avgComplexity = 3.5 // Default estimate
+          totalPackages = Math.max(1, Math.round(totalClasses / 5)) // Estimate: ~5 classes per package
+          largeClasses = Math.round(totalClasses * 0.1) // Estimate: ~10% are large
+        }
+      }
+
       setReportData({
         issues,
         fileStats,
@@ -215,7 +258,15 @@ export function EnhancedVisualReport({ reportContent, isOpen, onClose, isDarkMod
         totalFiles,
         totalIssues,
         qualityScore: calculateQualityScore(severityStats, totalFiles),
-        rawContent: content
+        rawContent: content,
+        totalLOC: totalLOC || 0,
+        totalClasses: totalClasses || 0,
+        totalPackages: totalPackages || 0,
+        avgComplexity: avgComplexity || 0,
+        largeClasses: largeClasses || 0,
+        totalMethods: totalMethods || 0,
+        avgMethodsPerClass: avgMethodsPerClass || 0,
+        avgClassSize: avgClassSize || 0
       })
     } catch (error) {
       console.error('Error parsing report content:', error)
@@ -712,7 +763,7 @@ export function EnhancedVisualReport({ reportContent, isOpen, onClose, isDarkMod
             
             {expandedSections.overview && (
               <div className="p-4 pt-0">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                   <div className={`p-6 rounded-lg text-center ${qualityGrade.bg}`}>
                     <div className={`text-4xl font-bold ${qualityGrade.color}`}>{reportData.qualityScore}</div>
                     <div className={`text-lg font-semibold ${qualityGrade.color}`}>Grade: {qualityGrade.grade}</div>
@@ -741,6 +792,48 @@ export function EnhancedVisualReport({ reportContent, isOpen, onClose, isDarkMod
                       <span className="font-semibold">Clean</span>
                     </div>
                     <div className="text-2xl font-bold">{Math.max(0, reportData.totalFiles - Object.keys(reportData.fileStats).length)}</div>
+                  </div>
+                </div>
+                
+                {/* Project Metrics Section */}
+                <div className={`p-4 rounded-lg border ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-blue-50 border-blue-200'}`}>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <Code className="h-5 w-5 text-blue-500" />
+                    Project Metrics
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">{reportData.totalLOC > 0 ? reportData.totalLOC.toLocaleString() : '0'}</div>
+                      <div className="text-xs opacity-75">Total Lines of Code</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-600">{reportData.totalClasses || 0}</div>
+                      <div className="text-xs opacity-75">Total Classes</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">{reportData.avgClassSize > 0 ? reportData.avgClassSize.toFixed(0) : '0'}</div>
+                      <div className="text-xs opacity-75">Avg Class Size (LOC)</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-orange-600">{reportData.totalPackages || 0}</div>
+                      <div className="text-xs opacity-75">Total Packages</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-red-600">{reportData.largeClasses || 0}</div>
+                      <div className="text-xs opacity-75">Large Classes (&gt;500 LOC)</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-yellow-600">{reportData.avgComplexity > 0 ? reportData.avgComplexity.toFixed(1) : '0'}</div>
+                      <div className="text-xs opacity-75">Avg Complexity</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-indigo-600">{reportData.totalMethods || 0}</div>
+                      <div className="text-xs opacity-75">Total Methods</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-pink-600">{reportData.avgMethodsPerClass > 0 ? reportData.avgMethodsPerClass.toFixed(1) : '0'}</div>
+                      <div className="text-xs opacity-75">Avg Methods/Class</div>
+                    </div>
                   </div>
                 </div>
               </div>

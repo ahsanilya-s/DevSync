@@ -68,7 +68,27 @@ public class ReportGenerator {
         report.append(String.format("Lines of Code: %,d\n", totalLOC));
         report.append(String.format("Issue Density: %.2f issues per KLOC\n\n", gradeResult.getIssueDensity()));
         
-        // Severity breakdown - ensure consistent ordering
+        // Project Metrics
+        int totalClasses = (Integer) analysisResults.getOrDefault("totalClasses", 0);
+        int totalMethods = (Integer) analysisResults.getOrDefault("totalMethods", 0);
+        int totalPackages = (Integer) analysisResults.getOrDefault("totalPackages", 0);
+        int largeClasses = (Integer) analysisResults.getOrDefault("largeClasses", 0);
+        double avgComplexity = (Double) analysisResults.getOrDefault("avgComplexity", 0.0);
+        double avgClassSize = totalClasses > 0 ? (double) totalLOC / totalClasses : 0;
+        double avgMethodsPerClass = totalClasses > 0 ? (double) totalMethods / totalClasses : 0;
+        
+        report.append("PROJECT METRICS\n");
+        report.append("---------------\n");
+        report.append(String.format("Total Lines of Code    : %,d\n", totalLOC));
+        report.append(String.format("Total Classes          : %d\n", totalClasses));
+        report.append(String.format("Total Methods          : %d\n", totalMethods));
+        report.append(String.format("Total Packages         : %d\n", totalPackages));
+        report.append(String.format("Large Classes (>500 LOC): %d\n", largeClasses));
+        report.append(String.format("Average Class Size     : %.1f LOC\n", avgClassSize));
+        report.append(String.format("Average Methods/Class  : %.1f\n", avgMethodsPerClass));
+        report.append(String.format("Average Complexity     : %.1f\n\n", avgComplexity));
+        
+        // Severity breakdown
         report.append("SEVERITY BREAKDOWN\n");
         report.append("------------------\n");
         
