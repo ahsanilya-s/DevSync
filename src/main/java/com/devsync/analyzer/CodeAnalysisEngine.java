@@ -38,6 +38,13 @@ public class CodeAnalysisEngine {
         enabledDetectors.put("MagicNumberDetector", settings.getMagicNumberEnabled());
         enabledDetectors.put("LongIdentifierDetector", settings.getLongIdentifierEnabled());
         
+        // ✅ ENABLE ALL OTHER DETECTORS (always on)
+        enabledDetectors.put("BrokenModularizationDetector", true);
+        enabledDetectors.put("ComplexConditionalDetector", true);
+        enabledDetectors.put("DeficientEncapsulationDetector", true);
+        enabledDetectors.put("LongStatementDetector", true);
+        enabledDetectors.put("UnnecessaryAbstractionDetector", true);
+        
         System.out.println("=== CodeAnalysisEngine Configuration ===");
         System.out.println("MissingDefaultDetector: " + settings.getMissingDefaultEnabled());
         System.out.println("EmptyCatchDetector: " + settings.getEmptyCatchEnabled());
@@ -45,6 +52,11 @@ public class CodeAnalysisEngine {
         System.out.println("LongParameterListDetector: " + settings.getLongParameterEnabled());
         System.out.println("MagicNumberDetector: " + settings.getMagicNumberEnabled());
         System.out.println("LongIdentifierDetector: " + settings.getLongIdentifierEnabled());
+        System.out.println("BrokenModularizationDetector: true (always enabled)");
+        System.out.println("ComplexConditionalDetector: true (always enabled)");
+        System.out.println("DeficientEncapsulationDetector: true (always enabled)");
+        System.out.println("LongStatementDetector: true (always enabled)");
+        System.out.println("UnnecessaryAbstractionDetector: true (always enabled)");
         
         this.maxMethodLength = settings.getMaxMethodLength();
         this.maxParameterCount = settings.getMaxParameterCount();
@@ -88,6 +100,11 @@ public class CodeAnalysisEngine {
     }
     
     public Map<String, Object> analyzeProject(String projectPath) {
+        System.out.println("\n========================================");
+        System.out.println("🔍 STARTING PROJECT ANALYSIS");
+        System.out.println("Project Path: " + projectPath);
+        System.out.println("========================================\n");
+        
         Map<String, Object> results = new HashMap<>();
         List<String> allIssues = new ArrayList<>();
         Map<String, Integer> severityCounts = new HashMap<>();
@@ -95,6 +112,8 @@ public class CodeAnalysisEngine {
         
         JavaFileCollector collector = new JavaFileCollector();
         List<File> javaFiles = collector.collectJavaFiles(projectPath);
+        
+        System.out.println("📁 Found " + javaFiles.size() + " Java files");
         
         int processedFiles = 0;
         int totalLOC = 0;
@@ -128,6 +147,15 @@ public class CodeAnalysisEngine {
             }
         }
         
+        System.out.println("\n========================================");
+        System.out.println("✅ ANALYSIS COMPLETE");
+        System.out.println("Total Files: " + javaFiles.size());
+        System.out.println("Processed Files: " + processedFiles);
+        System.out.println("Total Issues Found: " + allIssues.size());
+        System.out.println("Severity Breakdown: " + severityCounts);
+        System.out.println("Detector Breakdown: " + detectorCounts);
+        System.out.println("========================================\n");
+        
         results.put("issues", allIssues);
         results.put("totalFiles", javaFiles.size());
         results.put("processedFiles", processedFiles);
@@ -147,20 +175,19 @@ public class CodeAnalysisEngine {
             String detectorName = entry.getKey();
             Object detector = entry.getValue();
             
-            // Check if detector is enabled in user settings
+            // Check if detector is enabled
             if (enabledDetectors != null && enabledDetectors.containsKey(detectorName)) {
                 Boolean isEnabled = enabledDetectors.get(detectorName);
                 if (isEnabled == null || !isEnabled) {
-                    // User explicitly disabled this detector
+                    System.out.println("⏭️ Skipping " + detectorName + " (disabled by user)");
                     continue;
                 }
-                // User enabled this detector, proceed with analysis
             } else {
-                // No user settings for this detector, check default config
-                if (!AnalysisConfig.isDetectorEnabled(detectorName, null)) {
-                    continue;
-                }
+                // Detector not in settings - enable by default
+                System.out.println("✅ Running " + detectorName + " (enabled by default)");
             }
+            
+            System.out.println("🔍 Running detector: " + detectorName + " on file: " + fileName);
             
             try {
                 List<String> detectorIssues = (List<String>) detector.getClass()
@@ -168,10 +195,15 @@ public class CodeAnalysisEngine {
                     .invoke(detector, cu);
                 
                 if (detectorIssues != null && !detectorIssues.isEmpty()) {
+                    System.out.println("✅ " + detectorName + " found " + detectorIssues.size() + " issues in " + fileName);
                     issues.addAll(detectorIssues);
                     detectorCounts.merge(detectorName, detectorIssues.size(), Integer::sum);
+                } else {
+                    System.out.println("✅ " + detectorName + " found 0 issues in " + fileName);
                 }
             } catch (Exception e) {
+                System.err.println("❌ " + detectorName + " FAILED on " + fileName + ": " + e.getMessage());
+                e.printStackTrace();
                 issues.add("⚠️ [DetectorError] " + fileName + " - " + detectorName + " failed: " + e.getMessage());
             }
         }

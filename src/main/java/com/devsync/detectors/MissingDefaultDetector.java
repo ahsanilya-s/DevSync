@@ -31,26 +31,25 @@ public class MissingDefaultDetector {
         cu.accept(analyzer, null);
         
         analyzer.getMissingSwitches().forEach(switchInfo -> {
+            // THRESHOLD CHECK FIRST: Missing default = ALWAYS a smell (no threshold needed)
+            // Now calculate score for severity only
             double riskScore = calculateRiskScore(switchInfo);
+            String severity = getSeverity(switchInfo, riskScore);
+            String analysis = generateAnalysis(switchInfo);
+            String suggestions = generateSuggestions(switchInfo);
             
-            if (shouldReport(switchInfo, riskScore)) {
-                String severity = getSeverity(switchInfo, riskScore);
-                String analysis = generateAnalysis(switchInfo);
-                String suggestions = generateSuggestions(switchInfo);
-                
-                issues.add(String.format(
-                    "%s [MissingDefault] %s:%d - Switch on '%s' (%d cases, Risk: %.2f) - %s | Suggestions: %s | DetailedReason: %s",
-                    severity,
-                    cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
-                    switchInfo.lineNumber,
-                    switchInfo.switchExpression,
-                    switchInfo.caseCount,
-                    riskScore,
-                    analysis,
-                    suggestions,
-                    generateDetailedReason(switchInfo, riskScore)
-                ));
-            }
+            issues.add(String.format(
+                "%s [MissingDefault] %s:%d - Switch on '%s' (%d cases, Risk: %.2f) - %s | Suggestions: %s | DetailedReason: %s",
+                severity,
+                cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
+                switchInfo.lineNumber,
+                switchInfo.switchExpression,
+                switchInfo.caseCount,
+                riskScore,
+                analysis,
+                suggestions,
+                generateDetailedReason(switchInfo, riskScore)
+            ));
         });
         
         return issues;
@@ -169,22 +168,7 @@ public class MissingDefaultDetector {
         return "private_method";
     }
     
-    private boolean shouldReport(SwitchInfo switchInfo, double riskScore) {
-        if (switchInfo.hasDefaultCase) {
-            return false;
-        }
-        
-        if (switchInfo.isInTestMethod && riskScore < 0.8) {
-            return false;
-        }
-        
-        if (switchInfo.isEnumSwitch && switchInfo.caseCount == switchInfo.enumValueCount && 
-            isSafeEnum(switchInfo.switchType)) {
-            return false;
-        }
-        
-        return riskScore > 0.5;
-    }
+
     
     private String getSeverity(SwitchInfo switchInfo, double riskScore) {
         if (switchInfo.isInPublicMethod && (riskScore > 1.0 || switchInfo.hasReturnValue)) {
@@ -376,6 +360,7 @@ public class MissingDefaultDetector {
             info.hasFallthrough = hasFallthrough(entries);
             info.hasEmptyCases = hasEmptyCases(entries);
             
+            // Only add if default case is missing
             if (!info.hasDefaultCase) {
                 missingSwitches.add(info);
             }

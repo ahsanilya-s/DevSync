@@ -24,38 +24,34 @@ public class MagicNumberDetector {
         cu.accept(analyzer, null);
         
         for (MagicNumberInfo magicInfo : analyzer.getMagicNumbers()) {
-            if (shouldReport(magicInfo)) {
-                double riskScore = calculateRiskScore(magicInfo);
-                String severity = getSeverity(riskScore);
-                
-                issues.add(String.format(
-                    "%s [MagicNumber] %s:%d - Magic number '%s' in %s - %s | Suggestions: %s | DetailedReason: %s",
-                    severity,
-                    magicInfo.fileName,
-                    magicInfo.lineNumber,
-                    magicInfo.value,
-                    magicInfo.context,
-                    generateAnalysis(magicInfo),
-                    generateSuggestions(magicInfo),
-                    generateDetailedReason(magicInfo, riskScore)
-                ));
+            // THRESHOLD CHECK FIRST - binary detection
+            if (ACCEPTABLE_NUMBERS.contains(magicInfo.value) || 
+                magicInfo.isInTestMethod || 
+                magicInfo.isConstant) {
+                continue; // NO SMELL - exit immediately
             }
+            
+            // THRESHOLD EXCEEDED - now calculate score for severity only
+            double riskScore = calculateRiskScore(magicInfo);
+            String severity = getSeverity(riskScore);
+            
+            issues.add(String.format(
+                "%s [MagicNumber] %s:%d - Magic number '%s' in %s - %s | Suggestions: %s | DetailedReason: %s",
+                severity,
+                magicInfo.fileName,
+                magicInfo.lineNumber,
+                magicInfo.value,
+                magicInfo.context,
+                generateAnalysis(magicInfo),
+                generateSuggestions(magicInfo),
+                generateDetailedReason(magicInfo, riskScore)
+            ));
         }
         
         return issues;
     }
     
-    private boolean shouldReport(MagicNumberInfo magicInfo) {
-        if (ACCEPTABLE_NUMBERS.contains(magicInfo.value)) {
-            return false;
-        }
-        
-        if (magicInfo.isInTestMethod || magicInfo.isConstant) {
-            return false;
-        }
-        
-        return true;
-    }
+
     
     private double calculateRiskScore(MagicNumberInfo magicInfo) {
         double score = 0.6;

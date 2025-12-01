@@ -19,27 +19,32 @@ public class ComplexConditionalDetector {
         cu.accept(analyzer, null);
         
         analyzer.getComplexConditionals().forEach(condInfo -> {
-            double complexityScore = calculateComplexityScore(condInfo);
-            
-            if (shouldReport(condInfo, complexityScore)) {
-                String severity = getSeverity(condInfo, complexityScore);
-                String analysis = generateAnalysis(condInfo);
-                String suggestions = generateSuggestions(condInfo);
-                
-                issues.add(String.format(
-                    "%s [ComplexConditional] %s:%d - %s (Operators: %d, Depth: %d, Score: %.2f) - %s | Suggestions: %s | DetailedReason: %s",
-                    severity,
-                    cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
-                    condInfo.lineNumber,
-                    condInfo.type,
-                    condInfo.operatorCount,
-                    condInfo.nestingDepth,
-                    complexityScore,
-                    analysis,
-                    suggestions,
-                    generateDetailedReason(condInfo, complexityScore)
-                ));
+            // THRESHOLD CHECK FIRST - binary detection
+            // Already filtered in analyzer, but double-check
+            if (condInfo.operatorCount < BASE_COMPLEXITY_THRESHOLD && 
+                condInfo.nestingDepth <= MAX_NESTING_DEPTH) {
+                return; // NO SMELL - exit immediately
             }
+            
+            // THRESHOLD EXCEEDED - now calculate score for severity only
+            double complexityScore = calculateComplexityScore(condInfo);
+            String severity = getSeverity(condInfo, complexityScore);
+            String analysis = generateAnalysis(condInfo);
+            String suggestions = generateSuggestions(condInfo);
+            
+            issues.add(String.format(
+                "%s [ComplexConditional] %s:%d - %s (Operators: %d, Depth: %d, Score: %.2f) - %s | Suggestions: %s | DetailedReason: %s",
+                severity,
+                cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
+                condInfo.lineNumber,
+                condInfo.type,
+                condInfo.operatorCount,
+                condInfo.nestingDepth,
+                complexityScore,
+                analysis,
+                suggestions,
+                generateDetailedReason(condInfo, complexityScore)
+            ));
         });
         
         return issues;
@@ -73,11 +78,7 @@ public class ComplexConditionalDetector {
         return Math.min(1.0, score);
     }
     
-    private boolean shouldReport(ConditionalInfo condInfo, double complexityScore) {
-        return condInfo.operatorCount >= BASE_COMPLEXITY_THRESHOLD || 
-               condInfo.nestingDepth > MAX_NESTING_DEPTH || 
-               complexityScore > 0.6;
-    }
+
     
     private String getSeverity(ConditionalInfo condInfo, double complexityScore) {
         if (condInfo.operatorCount > CRITICAL_COMPLEXITY_THRESHOLD || complexityScore > 0.9) {

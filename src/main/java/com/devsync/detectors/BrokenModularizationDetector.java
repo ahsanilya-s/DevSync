@@ -17,28 +17,37 @@ public class BrokenModularizationDetector {
         
         analyzer.getModularizationIssues().forEach(modInfo -> {
             String entityKey = modInfo.fileName + ":" + modInfo.name;
-            if (!processedEntities.contains(entityKey) && shouldReport(modInfo)) {
-                processedEntities.add(entityKey);
-                
-                double score = calculateScore(modInfo);
-                String severity = getSeverity(score);
-                
-                issues.add(String.format(
-                    "%s [BrokenModularization] %s:%d - %s '%s' - %s | Suggestions: %s | DetailedReason: This %s has broken modularization with %d responsibilities, cohesion index of %.2f, and coupling count of %d. %s",
-                    severity,
-                    modInfo.fileName,
-                    modInfo.lineNumber,
-                    modInfo.type,
-                    modInfo.name,
-                    generateAnalysis(modInfo),
-                    generateSuggestions(modInfo),
-                    modInfo.type.toLowerCase(),
-                    modInfo.responsibilityCount,
-                    modInfo.cohesionIndex,
-                    modInfo.couplingCount,
-                    modInfo.hasMixedConcerns ? "It mixes unrelated concerns." : "It violates Single Responsibility Principle."
-                ));
+            if (processedEntities.contains(entityKey)) {
+                return; // Already processed
             }
+            processedEntities.add(entityKey);
+            
+            // THRESHOLD CHECK FIRST - binary detection
+            if (modInfo.responsibilityCount <= 3 && 
+                modInfo.cohesionIndex >= 0.4 && 
+                modInfo.couplingCount <= 6) {
+                return; // NO SMELL - exit immediately
+            }
+            
+            // THRESHOLD EXCEEDED - now calculate score for severity only
+            double score = calculateScore(modInfo);
+            String severity = getSeverity(score);
+            
+            issues.add(String.format(
+                "%s [BrokenModularization] %s:%d - %s '%s' - %s | Suggestions: %s | DetailedReason: This %s has broken modularization with %d responsibilities, cohesion index of %.2f, and coupling count of %d. %s",
+                severity,
+                modInfo.fileName,
+                modInfo.lineNumber,
+                modInfo.type,
+                modInfo.name,
+                generateAnalysis(modInfo),
+                generateSuggestions(modInfo),
+                modInfo.type.toLowerCase(),
+                modInfo.responsibilityCount,
+                modInfo.cohesionIndex,
+                modInfo.couplingCount,
+                modInfo.hasMixedConcerns ? "It mixes unrelated concerns." : "It violates Single Responsibility Principle."
+            ));
         });
         
         return issues;
@@ -53,13 +62,7 @@ public class BrokenModularizationDetector {
         return cohesionScore * 0.3 + couplingScore * 0.3 + responsibilityScore * 0.2 + mixedConcernScore;
     }
     
-    private boolean shouldReport(ModularizationInfo modInfo) {
-        // Only report significant modularization issues
-        return (modInfo.responsibilityCount > 4) || 
-               (modInfo.cohesionIndex < 0.3) || 
-               (modInfo.couplingCount > 8) ||
-               (modInfo.hasMixedConcerns && modInfo.responsibilityCount > 3);
-    }
+
     
     private String getSeverity(double score) {
         if (score >= 0.8) return "🔴";

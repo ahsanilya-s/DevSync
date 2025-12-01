@@ -25,23 +25,26 @@ public class EmptyCatchDetector {
         
         analyzer.getEmptyCatches().forEach(catchInfo -> {
             String lineKey = catchInfo.fileName + ":" + catchInfo.lineNumber;
-            if (!processedLines.contains(lineKey)) {
-                processedLines.add(lineKey);
-                
-                double score = calculateScore(catchInfo);
-                String severity = getSeverity(score);
-                
-                issues.add(String.format(
-                    "%s [EmptyCatch] %s:%d - Empty catch block for %s - %s | Suggestions: %s | DetailedReason: %s",
-                    severity,
-                    catchInfo.fileName,
-                    catchInfo.lineNumber,
-                    catchInfo.exceptionType,
-                    generateAnalysis(catchInfo),
-                    generateSuggestions(catchInfo),
-                    generateDetailedReason(catchInfo)
-                ));
+            if (processedLines.contains(lineKey)) {
+                return; // Already processed
             }
+            processedLines.add(lineKey);
+            
+            // THRESHOLD CHECK: Empty catch block = ALWAYS a smell (no threshold needed)
+            // Now calculate score for severity only
+            double score = calculateScore(catchInfo);
+            String severity = getSeverity(score);
+            
+            issues.add(String.format(
+                "%s [EmptyCatch] %s:%d - Empty catch block for %s - %s | Suggestions: %s | DetailedReason: %s",
+                severity,
+                catchInfo.fileName,
+                catchInfo.lineNumber,
+                catchInfo.exceptionType,
+                generateAnalysis(catchInfo),
+                generateSuggestions(catchInfo),
+                generateDetailedReason(catchInfo)
+            ));
         });
         
         return issues;

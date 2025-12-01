@@ -14,29 +14,33 @@ public class UnnecessaryAbstractionDetector {
         cu.accept(analyzer, null);
         
         analyzer.getUnnecessaryAbstractions().forEach(absInfo -> {
-            double complexityScore = calculateComplexityScore(absInfo);
-            
-            if (shouldReport(absInfo, complexityScore)) {
-                String severity = getSeverity(absInfo, complexityScore);
-                String analysis = generateAnalysis(absInfo);
-                String suggestions = generateSuggestions(absInfo);
-                
-                issues.add(String.format(
-                    "%s [UnnecessaryAbstraction] %s:%d - %s '%s' (Score: %.2f) - %s | Suggestions: %s | DetailedReason: This abstraction is unnecessary because it is used only %d time(s), %s, and %s. Complexity score: %.2f. Unnecessary abstractions add complexity without benefit.",
-                    severity,
-                    cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
-                    absInfo.lineNumber,
-                    absInfo.type,
-                    absInfo.name,
-                    complexityScore,
-                    analysis,
-                    suggestions,
-                    absInfo.usageCount,
-                    absInfo.hasOnlyOneImplementation ? "has only one implementation" : "has multiple implementations",
-                    absInfo.isSimpleWrapper ? "acts as a simple wrapper" : "provides meaningful abstraction",
-                    complexityScore
-                ));
+            // THRESHOLD CHECK FIRST - binary detection
+            // Interface with only 1 implementation AND used <= 1 time = unnecessary
+            if (!absInfo.hasOnlyOneImplementation || absInfo.usageCount > 1) {
+                return; // NO SMELL - exit immediately
             }
+            
+            // THRESHOLD EXCEEDED - now calculate score for severity only
+            double complexityScore = calculateComplexityScore(absInfo);
+            String severity = getSeverity(absInfo, complexityScore);
+            String analysis = generateAnalysis(absInfo);
+            String suggestions = generateSuggestions(absInfo);
+            
+            issues.add(String.format(
+                "%s [UnnecessaryAbstraction] %s:%d - %s '%s' (Score: %.2f) - %s | Suggestions: %s | DetailedReason: This abstraction is unnecessary because it is used only %d time(s), %s, and %s. Complexity score: %.2f. Unnecessary abstractions add complexity without benefit.",
+                severity,
+                cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
+                absInfo.lineNumber,
+                absInfo.type,
+                absInfo.name,
+                complexityScore,
+                analysis,
+                suggestions,
+                absInfo.usageCount,
+                absInfo.hasOnlyOneImplementation ? "has only one implementation" : "has multiple implementations",
+                absInfo.isSimpleWrapper ? "acts as a simple wrapper" : "provides meaningful abstraction",
+                complexityScore
+            ));
         });
         
         return issues;
@@ -50,9 +54,7 @@ public class UnnecessaryAbstractionDetector {
         return usageScore * 0.5 + implementationScore * 0.3 + simplicityScore * 0.2;
     }
     
-    private boolean shouldReport(AbstractionInfo absInfo, double complexityScore) {
-        return complexityScore > 0.6;
-    }
+
     
     private String getSeverity(AbstractionInfo absInfo, double complexityScore) {
         if (complexityScore > 0.9) return "🔴";

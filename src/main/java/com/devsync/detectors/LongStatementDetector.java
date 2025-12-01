@@ -22,25 +22,34 @@ public class LongStatementDetector {
         
         analyzer.getLongStatements().forEach(stmtInfo -> {
             String lineKey = stmtInfo.fileName + ":" + stmtInfo.lineNumber;
-            if (!processedLines.contains(lineKey) && shouldReport(stmtInfo)) {
-                processedLines.add(lineKey);
-                
-                double score = calculateScore(stmtInfo);
-                String severity = getSeverity(score);
-                
-                issues.add(String.format(
-                    "%s [LongStatement] %s:%d - %s (%d tokens, %d chars) - %s | Suggestions: %s | DetailedReason: %s",
-                    severity,
-                    stmtInfo.fileName,
-                    stmtInfo.lineNumber,
-                    stmtInfo.type,
-                    stmtInfo.tokenCount,
-                    stmtInfo.charLength,
-                    generateAnalysis(stmtInfo),
-                    generateSuggestions(stmtInfo),
-                    generateDetailedReason(stmtInfo, score)
-                ));
+            if (processedLines.contains(lineKey)) {
+                return; // Already processed
             }
+            processedLines.add(lineKey);
+            
+            // THRESHOLD CHECK FIRST - binary detection
+            // Already filtered in analyzer, but double-check
+            if (stmtInfo.tokenCount < BASE_TOKEN_THRESHOLD && 
+                stmtInfo.charLength < BASE_CHAR_THRESHOLD) {
+                return; // NO SMELL - exit immediately
+            }
+            
+            // THRESHOLD EXCEEDED - now calculate score for severity only
+            double score = calculateScore(stmtInfo);
+            String severity = getSeverity(score);
+            
+            issues.add(String.format(
+                "%s [LongStatement] %s:%d - %s (%d tokens, %d chars) - %s | Suggestions: %s | DetailedReason: %s",
+                severity,
+                stmtInfo.fileName,
+                stmtInfo.lineNumber,
+                stmtInfo.type,
+                stmtInfo.tokenCount,
+                stmtInfo.charLength,
+                generateAnalysis(stmtInfo),
+                generateSuggestions(stmtInfo),
+                generateDetailedReason(stmtInfo, score)
+            ));
         });
         
         return issues;
@@ -55,12 +64,7 @@ public class LongStatementDetector {
         return Math.max(tokenScore, charScore) * 0.5 + complexityScore * 0.3 + chainScore * 0.2;
     }
     
-    private boolean shouldReport(StatementInfo stmtInfo) {
-        // Only report truly long statements
-        return (stmtInfo.tokenCount >= BASE_TOKEN_THRESHOLD && stmtInfo.charLength >= BASE_CHAR_THRESHOLD) || 
-               stmtInfo.expressionComplexity >= 12 ||
-               stmtInfo.methodChainLength >= 6;
-    }
+
     
     private String getSeverity(double score) {
         if (score >= 0.8) return "🔴";

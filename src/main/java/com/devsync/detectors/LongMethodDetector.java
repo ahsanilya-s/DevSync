@@ -9,7 +9,7 @@ import java.util.*;
 
 public class LongMethodDetector {
 
-    private int baseLineThreshold = 20;
+    private int baseLineThreshold = 35;
     private int criticalLineThreshold = 50;
 
     private static final int MAX_CYCLOMATIC_COMPLEXITY = 10;
@@ -39,18 +39,19 @@ public class LongMethodDetector {
         cu.accept(analyzer, null);
 
         for (MethodInfo m : analyzer.getLongMethods()) {
-
-            // Deduplicate using file + method + line
             String key = m.fileName + ":" + m.methodName + ":" + m.lineNumber;
-
             if (processed.contains(key)) continue;
-
-            if (isExcludedMethod(m)) continue;
-
-            if (!shouldReport(m)) continue;
-
             processed.add(key);
 
+            // THRESHOLD CHECK FIRST - binary detection
+            if (m.lineCount < baseLineThreshold && 
+                m.cyclomaticComplexity <= MAX_CYCLOMATIC_COMPLEXITY && 
+                m.cognitiveComplexity <= MAX_COGNITIVE_COMPLEXITY && 
+                m.nestingDepth <= MAX_NESTING_DEPTH) {
+                continue; // NO SMELL - exit immediately
+            }
+
+            // THRESHOLD EXCEEDED - now calculate score for severity only
             double score = calculateScore(m);
             String severity = getSeverity(score);
 
@@ -90,25 +91,7 @@ public class LongMethodDetector {
         );
     }
 
-    private boolean shouldReport(MethodInfo m) {
-        return m.lineCount > baseLineThreshold ||
-                m.cyclomaticComplexity > MAX_CYCLOMATIC_COMPLEXITY ||
-                m.cognitiveComplexity > MAX_COGNITIVE_COMPLEXITY ||
-                m.nestingDepth > MAX_NESTING_DEPTH ||
-                m.responsibilityCount > 3;
-    }
 
-    private boolean isExcludedMethod(MethodInfo m) {
-        String name = m.methodName.toLowerCase();
-
-        if ((name.startsWith("get") || name.startsWith("set")) && m.lineCount <= 3) return true;
-
-        if (name.equals("main") && m.lineCount < 30) return true;
-
-        if (name.startsWith("test") && m.lineCount < 40) return true;
-
-        return false;
-    }
 
     private String determineMethodType(MethodInfo m) {
         String name = m.methodName.toLowerCase();

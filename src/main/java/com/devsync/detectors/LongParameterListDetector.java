@@ -4,7 +4,6 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.ConstructorDeclaration;
-import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -45,27 +44,31 @@ public class LongParameterListDetector {
         cu.accept(analyzer, null);
         
         analyzer.getProblematicMethods().forEach(paramInfo -> {
-            double complexityScore = calculateComplexityScore(paramInfo);
-            
-            if (shouldReport(paramInfo, complexityScore)) {
-                String severity = getSeverity(paramInfo, complexityScore);
-                String analysis = generateAnalysis(paramInfo);
-                String suggestions = generateSuggestions(paramInfo);
-                
-                issues.add(String.format(
-                    "%s [LongParameterList] %s:%d - %s '%s' (%d params, Complexity: %.2f) - %s | Suggestions: %s | DetailedReason: %s",
-                    severity,
-                    cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
-                    paramInfo.lineNumber,
-                    paramInfo.isConstructor ? "Constructor" : "Method",
-                    paramInfo.methodName,
-                    paramInfo.parameterCount,
-                    complexityScore,
-                    analysis,
-                    suggestions,
-                    generateDetailedReason(paramInfo, complexityScore)
-                ));
+            // THRESHOLD CHECK FIRST - binary detection
+            int threshold = paramInfo.isConstructor ? constructorThreshold : baseParameterThreshold;
+            if (paramInfo.parameterCount < threshold) {
+                return; // NO SMELL - exit immediately
             }
+            
+            // THRESHOLD EXCEEDED - now calculate score for severity only
+            double complexityScore = calculateComplexityScore(paramInfo);
+            String severity = getSeverity(paramInfo, complexityScore);
+            String analysis = generateAnalysis(paramInfo);
+            String suggestions = generateSuggestions(paramInfo);
+            
+            issues.add(String.format(
+                "%s [LongParameterList] %s:%d - %s '%s' (%d params, Complexity: %.2f) - %s | Suggestions: %s | DetailedReason: %s",
+                severity,
+                cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
+                paramInfo.lineNumber,
+                paramInfo.isConstructor ? "Constructor" : "Method",
+                paramInfo.methodName,
+                paramInfo.parameterCount,
+                complexityScore,
+                analysis,
+                suggestions,
+                generateDetailedReason(paramInfo, complexityScore)
+            ));
         });
         
         return issues;
@@ -73,7 +76,6 @@ public class LongParameterListDetector {
     
     private double calculateComplexityScore(ParameterInfo paramInfo) {
         double baseScore = (double) paramInfo.parameterCount / criticalParameterThreshold;
-        
         double typeComplexityScore = calculateTypeComplexity(paramInfo);
         double cohesionScore = calculateParameterCohesion(paramInfo);
         double semanticScore = calculateSemanticComplexity(paramInfo);
@@ -144,30 +146,6 @@ public class LongParameterListDetector {
         }
         
         return 1.0 - ((double) semanticGroups.size() / Math.max(1, paramInfo.parameterCount));
-    }
-    
-    private boolean shouldReport(ParameterInfo paramInfo, double complexityScore) {
-        int threshold = paramInfo.isConstructor ? constructorThreshold : baseParameterThreshold;
-        
-        if (paramInfo.parameterCount < threshold && complexityScore < 0.7) {
-            return false;
-        }
-        
-        if (isExcludedMethod(paramInfo)) {
-            return false;
-        }
-        
-        return paramInfo.parameterCount >= threshold || complexityScore > 0.8;
-    }
-    
-    private boolean isExcludedMethod(ParameterInfo paramInfo) {
-        String name = paramInfo.methodName.toLowerCase();
-        
-        if (name.startsWith("test") && paramInfo.parameterCount <= 6) return true;
-        if (name.equals("main") && paramInfo.parameterCount == 1) return true;
-        if (name.startsWith("builder") && paramInfo.parameterCount <= 8) return true;
-        
-        return false;
     }
     
     private String determineMethodType(ParameterInfo paramInfo) {

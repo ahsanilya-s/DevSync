@@ -14,29 +14,33 @@ public class DeficientEncapsulationDetector {
         cu.accept(analyzer, null);
         
         analyzer.getEncapsulationIssues().forEach(encInfo -> {
-            double riskScore = calculateRiskScore(encInfo);
-            
-            if (shouldReport(encInfo, riskScore)) {
-                String severity = getSeverity(encInfo, riskScore);
-                String analysis = generateAnalysis(encInfo);
-                String suggestions = generateSuggestions(encInfo);
-                
-                issues.add(String.format(
-                    "%s [DeficientEncapsulation] %s:%d - %s '%s' (Risk: %.2f) - %s | Suggestions: %s | DetailedReason: This field breaks encapsulation because it is %s, %s, and %s. Risk score: %.2f. Exposing internal state makes the class fragile and hard to maintain.",
-                    severity,
-                    cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
-                    encInfo.lineNumber,
-                    encInfo.type,
-                    encInfo.name,
-                    riskScore,
-                    analysis,
-                    suggestions,
-                    encInfo.isPublic ? "publicly accessible" : "not properly protected",
-                    encInfo.isMutable ? "mutable" : "immutable",
-                    encInfo.lacksAccessors ? "lacks proper accessor methods" : "has accessors",
-                    riskScore
-                ));
+            // THRESHOLD CHECK FIRST - binary detection
+            // Only report if field is public (main threshold)
+            if (!encInfo.isPublic) {
+                return; // NO SMELL - exit immediately
             }
+            
+            // THRESHOLD EXCEEDED - now calculate score for severity only
+            double riskScore = calculateRiskScore(encInfo);
+            String severity = getSeverity(encInfo, riskScore);
+            String analysis = generateAnalysis(encInfo);
+            String suggestions = generateSuggestions(encInfo);
+            
+            issues.add(String.format(
+                "%s [DeficientEncapsulation] %s:%d - %s '%s' (Risk: %.2f) - %s | Suggestions: %s | DetailedReason: This field breaks encapsulation because it is %s, %s, and %s. Risk score: %.2f. Exposing internal state makes the class fragile and hard to maintain.",
+                severity,
+                cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
+                encInfo.lineNumber,
+                encInfo.type,
+                encInfo.name,
+                riskScore,
+                analysis,
+                suggestions,
+                encInfo.isPublic ? "publicly accessible" : "not properly protected",
+                encInfo.isMutable ? "mutable" : "immutable",
+                encInfo.lacksAccessors ? "lacks proper accessor methods" : "has accessors",
+                riskScore
+            ));
         });
         
         return issues;
@@ -50,10 +54,7 @@ public class DeficientEncapsulationDetector {
         return visibilityScore + mutabilityScore + accessorScore;
     }
     
-    private boolean shouldReport(EncapsulationInfo encInfo, double riskScore) {
-        // Only report if field is public AND lacks proper accessors
-        return encInfo.isPublic && encInfo.lacksAccessors;
-    }
+
     
     private String getSeverity(EncapsulationInfo encInfo, double riskScore) {
         if (riskScore > 1.2) return "🔴";
