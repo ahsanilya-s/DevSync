@@ -36,6 +36,15 @@ public class AnalysisHistory {
     
     @Column
     private String projectPath;
+    
+    @Column
+    private Integer totalLOC;
+    
+    @Column
+    private String grade;
+    
+    @Column
+    private Double issueDensity;
 
     public AnalysisHistory() {}
 
@@ -53,6 +62,15 @@ public class AnalysisHistory {
         if (reportPath != null && reportPath.contains("/")) {
             this.projectPath = reportPath.substring(0, reportPath.lastIndexOf("/"));
         }
+    }
+    
+    public AnalysisHistory(String userId, String projectName, String reportPath, 
+                          Integer totalIssues, Integer criticalIssues, Integer warnings, Integer suggestions,
+                          Integer totalLOC, String grade, Double issueDensity) {
+        this(userId, projectName, reportPath, totalIssues, criticalIssues, warnings, suggestions);
+        this.totalLOC = totalLOC;
+        this.grade = grade;
+        this.issueDensity = issueDensity;
     }
 
     // Getters and Setters
@@ -85,4 +103,13 @@ public class AnalysisHistory {
     
     public String getProjectPath() { return projectPath; }
     public void setProjectPath(String projectPath) { this.projectPath = projectPath; }
+    
+    public Integer getTotalLOC() { return totalLOC; }
+    public void setTotalLOC(Integer totalLOC) { this.totalLOC = totalLOC; }
+    
+    public String getGrade() { return grade; }
+    public void setGrade(String grade) { this.grade = grade; }
+    
+    public Double getIssueDensity() { return issueDensity; }
+    public void setIssueDensity(Double issueDensity) { this.issueDensity = issueDensity; }
 }

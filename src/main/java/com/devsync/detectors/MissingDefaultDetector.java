@@ -31,25 +31,26 @@ public class MissingDefaultDetector {
         cu.accept(analyzer, null);
         
         analyzer.getMissingSwitches().forEach(switchInfo -> {
+            // THRESHOLD CHECK FIRST: Missing default = ALWAYS a smell (no threshold needed)
+            // Now calculate score for severity only
             double riskScore = calculateRiskScore(switchInfo);
+            String severity = getSeverity(switchInfo, riskScore);
+            String analysis = generateAnalysis(switchInfo);
+            String suggestions = generateSuggestions(switchInfo);
             
-            if (shouldReport(switchInfo, riskScore)) {
-                String severity = getSeverity(switchInfo, riskScore);
-                String analysis = generateAnalysis(switchInfo);
-                String suggestions = generateSuggestions(switchInfo);
-                
-                issues.add(String.format(
-                    "%s [MissingDefault] %s:%d - Switch on '%s' (%d cases, Risk: %.2f) - %s | Suggestions: %s",
-                    severity,
-                    cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
-                    switchInfo.lineNumber,
-                    switchInfo.switchExpression,
-                    switchInfo.caseCount,
-                    riskScore,
-                    analysis,
-                    suggestions
-                ));
-            }
+            issues.add(String.format(
+                "%s [MissingDefault] %s:%d - Switch on '%s' (%d cases, Risk: %.2f) - %s | Suggestions: %s | DetailedReason: %s | ThresholdDetails: {\"caseCount\":%d,\"hasDefaultCase\":false,\"isEnumSwitch\":%b,\"enumValueCount\":%d,\"hasReturnValue\":%b,\"isInPublicMethod\":%b,\"riskScore\":%.2f,\"summary\":\"Switch statements are ALWAYS flagged when missing default case.\"}" ,
+                severity,
+                cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
+                switchInfo.lineNumber,
+                switchInfo.switchExpression,
+                switchInfo.caseCount,
+                riskScore,
+                analysis,
+                suggestions,
+                generateDetailedReason(switchInfo, riskScore),
+                switchInfo.caseCount, switchInfo.isEnumSwitch, switchInfo.enumValueCount, switchInfo.hasReturnValue, switchInfo.isInPublicMethod, riskScore
+            ));
         });
         
         return issues;
@@ -168,22 +169,7 @@ public class MissingDefaultDetector {
         return "private_method";
     }
     
-    private boolean shouldReport(SwitchInfo switchInfo, double riskScore) {
-        if (switchInfo.hasDefaultCase) {
-            return false;
-        }
-        
-        if (switchInfo.isInTestMethod && riskScore < 0.8) {
-            return false;
-        }
-        
-        if (switchInfo.isEnumSwitch && switchInfo.caseCount == switchInfo.enumValueCount && 
-            isSafeEnum(switchInfo.switchType)) {
-            return false;
-        }
-        
-        return riskScore > 0.5;
-    }
+
     
     private String getSeverity(SwitchInfo switchInfo, double riskScore) {
         if (switchInfo.isInPublicMethod && (riskScore > 1.0 || switchInfo.hasReturnValue)) {
@@ -242,6 +228,49 @@ public class MissingDefaultDetector {
         suggestions.add("Add logging for unexpected values");
         
         return String.join(", ", suggestions);
+    }
+    
+    private String generateDetailedReason(SwitchInfo switchInfo, double riskScore) {
+        StringBuilder reason = new StringBuilder();
+        reason.append("This switch statement is flagged as a code smell because: ");
+        
+        List<String> issues = new ArrayList<>();
+        
+        issues.add("it lacks a default case to handle unexpected values");
+        
+        if (switchInfo.isEnumSwitch) {
+            if (switchInfo.caseCount < switchInfo.enumValueCount) {
+                issues.add(String.format("only %d out of %d enum values are handled", 
+                    switchInfo.caseCount, switchInfo.enumValueCount));
+            } else {
+                issues.add(String.format("although all %d enum values are covered, future enum additions could break the code", 
+                    switchInfo.enumValueCount));
+            }
+        } else {
+            issues.add(String.format("with only %d case(s), unhandled values will silently fall through", 
+                switchInfo.caseCount));
+        }
+        
+        if (switchInfo.hasReturnValue) {
+            issues.add("the switch is used in a return statement, so missing values will cause compilation errors or unexpected nulls");
+        }
+        
+        if (switchInfo.isInPublicMethod) {
+            issues.add("it's in a public method, exposing the risk to external callers");
+        }
+        
+        if (switchInfo.hasFallthrough) {
+            issues.add("some cases fall through without break statements, increasing complexity");
+        }
+        
+        if (switchInfo.hasEmptyCases) {
+            issues.add("some cases are empty, suggesting incomplete implementation");
+        }
+        
+        reason.append(String.join(", ", issues));
+        reason.append(String.format(". Risk score: %.2f. Missing default cases can lead to silent failures and unexpected behavior.", riskScore));
+        
+        return reason.toString();
     }
     
     private static class SwitchInfo {
@@ -332,6 +361,7 @@ public class MissingDefaultDetector {
             info.hasFallthrough = hasFallthrough(entries);
             info.hasEmptyCases = hasEmptyCases(entries);
             
+            // Only add if default case is missing
             if (!info.hasDefaultCase) {
                 missingSwitches.add(info);
             }

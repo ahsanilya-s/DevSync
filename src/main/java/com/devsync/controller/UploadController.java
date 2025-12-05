@@ -179,9 +179,15 @@ public class UploadController {
 
             // 2) Get user settings
             UserSettings settings = userSettingsRepository.findByUserId(userId).orElse(new UserSettings(userId));
+            System.out.println("=== User Settings Loaded ===");
+            System.out.println("User ID: " + userId);
+            System.out.println("Magic Number Enabled: " + settings.getMagicNumberEnabled());
+            System.out.println("Long Method Enabled: " + settings.getLongMethodEnabled());
+            System.out.println("Empty Catch Enabled: " + settings.getEmptyCatchEnabled());
             
-            // 3) Use centralized analysis engine
+            // 3) Use centralized analysis engine with user settings
             CodeAnalysisEngine analysisEngine = new CodeAnalysisEngine();
+            analysisEngine.configureFromSettings(settings);
             Map<String, Object> analysisResults = analysisEngine.analyzeProject(targetDir);
             
             @SuppressWarnings("unchecked")
@@ -212,8 +218,14 @@ public class UploadController {
             int calculatedTotal = criticalCount + warningCount + suggestionCount + lowCount;
             int actualTotal = Math.max(allIssues.size(), calculatedTotal);
             
+            // Get LOC and calculate grade
+            int totalLOC = (Integer) analysisResults.getOrDefault("totalLOC", 0);
+            com.devsync.grading.GradingSystem.GradeResult gradeResult = 
+                com.devsync.grading.GradingSystem.calculateGrade(severityCounts, totalLOC);
+            
             AnalysisHistory history = new AnalysisHistory(userId, originalFileName, reportPath, 
-                                                         actualTotal, criticalCount, warningCount, suggestionCount);
+                                                         actualTotal, criticalCount, warningCount, suggestionCount,
+                                                         totalLOC, gradeResult.getLetterGrade(), gradeResult.getIssueDensity());
             analysisHistoryRepository.save(history);
             
             // Debug logging
@@ -224,6 +236,9 @@ public class UploadController {
             System.out.println("High: " + warningCount);
             System.out.println("Medium: " + suggestionCount);
             System.out.println("Low: " + lowCount);
+            System.out.println("Lines of Code: " + totalLOC);
+            System.out.println("Grade: " + gradeResult.getLetterGrade() + " (" + String.format("%.1f", gradeResult.getNumericScore()) + "%)");
+            System.out.println("Issue Density: " + String.format("%.2f", gradeResult.getIssueDensity()) + " issues/KLOC");
             System.out.println("Report Path: " + reportPath);
             
             // 6) get AI analysis using user settings and admin filters
@@ -244,8 +259,10 @@ public class UploadController {
             
             // 7) response summary with report path
             String reportFileName = new File(reportPath).getName();
-            String summary = String.format("✅ Advanced Analysis Complete!\n📂 Extracted to: %s\n📄 Java files: %d\n📝 Report: %s\n🔍 Issues detected: %d\n🤖 AI analysis: %s\n🧠 Advanced algorithms: Cyclomatic complexity, Cognitive complexity, Semantic analysis, Pattern recognition\n📋 Report path: %s",
-                    targetDir, javaFileCount, reportFileName, allIssues.size(), aiStatus, reportPath);
+            String summary = String.format("✅ Advanced Analysis Complete!\n📂 Extracted to: %s\n📄 Java files: %d\n📏 Lines of Code: %,d\n📝 Report: %s\n🔍 Issues detected: %d\n📊 Grade: %s (%.1f%%)\n📈 Issue Density: %.2f issues/KLOC\n⭐ Quality: %s\n🤖 AI analysis: %s\n🧠 Advanced algorithms: Cyclomatic complexity, Cognitive complexity, Semantic analysis, Pattern recognition\n📋 Report path: %s",
+                    targetDir, javaFileCount, totalLOC, reportFileName, allIssues.size(), 
+                    gradeResult.getLetterGrade(), gradeResult.getNumericScore(), gradeResult.getIssueDensity(),
+                    gradeResult.getQualityLevel(), aiStatus, reportPath);
 
             return ResponseEntity.ok(summary);
 

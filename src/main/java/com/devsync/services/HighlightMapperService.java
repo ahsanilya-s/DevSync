@@ -1,5 +1,6 @@
 package com.devsync.services;
 
+import com.devsync.dto.LongMethodThresholdDetails;
 import com.devsync.model.CodeIssue;
 import org.springframework.stereotype.Service;
 
@@ -57,7 +58,7 @@ public class HighlightMapperService {
     }
 
     private CodeIssue parseIssueLine(String line) {
-        // Format: 🚨 🔴 [Type] file.java:line - description | Suggestions: suggestion
+        // Format: 🚨 🔴 [Type] file.java:line - description | Suggestions: suggestion | DetailedReason: reason
         try {
             String cleanLine = line.substring(line.indexOf("🚨") + 1).trim();
             
@@ -81,21 +82,44 @@ public class HighlightMapperService {
             String fileName = extractFileName(filePath);
             int lineNumber = Integer.parseInt(fileLineMatcher.group(2));
             
-            // Extract message and suggestion
+            // Extract message, suggestion, detailed reason, and threshold details
             String remaining = afterType.substring(fileLineMatcher.end()).trim();
             String message = "";
             String suggestion = "";
+            String detailedReason = "";
+            String thresholdDetailsJson = "";
             
             if (remaining.startsWith("-")) {
                 remaining = remaining.substring(1).trim();
                 String[] parts = remaining.split("\\|");
                 message = parts[0].trim();
-                if (parts.length > 1 && parts[1].contains("Suggestions:")) {
-                    suggestion = parts[1].substring(parts[1].indexOf("Suggestions:") + 12).trim();
+                
+                for (int i = 1; i < parts.length; i++) {
+                    String part = parts[i].trim();
+                    if (part.startsWith("Suggestions:")) {
+                        suggestion = part.substring(12).trim();
+                    } else if (part.startsWith("DetailedReason:")) {
+                        detailedReason = part.substring(15).trim();
+                    } else if (part.startsWith("ThresholdDetails:")) {
+                        thresholdDetailsJson = part.substring(17).trim();
+                    }
                 }
             }
             
-            return new CodeIssue(type, fileName, lineNumber, severity, message, suggestion);
+            CodeIssue issue = new CodeIssue(type, fileName, lineNumber, severity, message, suggestion);
+            issue.setDetailedReason(detailedReason);
+            
+            // Parse threshold details for LongMethod from detailedReason (legacy)
+            if ("LongMethod".equals(type) && detailedReason != null && !detailedReason.isEmpty()) {
+                issue.setThresholdDetails(parseThresholdDetails(detailedReason));
+            }
+            
+            // Parse threshold details from JSON for all other detectors
+            if (thresholdDetailsJson != null && !thresholdDetailsJson.isEmpty()) {
+                issue.setThresholdDetailsJson(thresholdDetailsJson);
+            }
+            
+            return issue;
         } catch (Exception e) {
             System.err.println("Failed to parse issue line: " + line + " - " + e.getMessage());
             return null;
@@ -118,5 +142,65 @@ public class HighlightMapperService {
             return path.substring(path.lastIndexOf("\\") + 1);
         }
         return path;
+    }
+    
+    private LongMethodThresholdDetails parseThresholdDetails(String detailedReason) {
+        LongMethodThresholdDetails details = new LongMethodThresholdDetails();
+        
+        try {
+            Pattern statementPattern = Pattern.compile("Statement count is (\\d+) \\((exceeds|within) (?:critical threshold|base threshold|threshold) of (\\d+)\\)");
+            Matcher statementMatcher = statementPattern.matcher(detailedReason);
+            if (statementMatcher.find()) {
+                details.setStatementCount(Integer.parseInt(statementMatcher.group(1)));
+                details.setExceedsStatementCount("exceeds".equals(statementMatcher.group(2)));
+                int threshold = Integer.parseInt(statementMatcher.group(3));
+                if (detailedReason.contains("critical threshold")) {
+                    details.setCriticalThreshold(threshold);
+                    details.setBaseThreshold(threshold / 2);
+                } else {
+                    details.setBaseThreshold(threshold);
+                    details.setCriticalThreshold(threshold * 2);
+                }
+            }
+            
+            Pattern cyclomaticPattern = Pattern.compile("Cyclomatic complexity is (\\d+) \\((exceeds|within) max of (\\d+)");
+            Matcher cyclomaticMatcher = cyclomaticPattern.matcher(detailedReason);
+            if (cyclomaticMatcher.find()) {
+                details.setCyclomaticComplexity(Integer.parseInt(cyclomaticMatcher.group(1)));
+                details.setExceedsCyclomaticComplexity("exceeds".equals(cyclomaticMatcher.group(2)));
+                details.setMaxCyclomaticComplexity(Integer.parseInt(cyclomaticMatcher.group(3)));
+            }
+            
+            Pattern cognitivePattern = Pattern.compile("Cognitive complexity is (\\d+) \\((exceeds|within) max of (\\d+)");
+            Matcher cognitiveMatcher = cognitivePattern.matcher(detailedReason);
+            if (cognitiveMatcher.find()) {
+                details.setCognitiveComplexity(Integer.parseInt(cognitiveMatcher.group(1)));
+                details.setExceedsCognitiveComplexity("exceeds".equals(cognitiveMatcher.group(2)));
+                details.setMaxCognitiveComplexity(Integer.parseInt(cognitiveMatcher.group(3)));
+            }
+            
+            Pattern nestingPattern = Pattern.compile("Nesting depth is (\\d+) levels \\((exceeds|within) max of (\\d+)");
+            Matcher nestingMatcher = nestingPattern.matcher(detailedReason);
+            if (nestingMatcher.find()) {
+                details.setNestingDepth(Integer.parseInt(nestingMatcher.group(1)));
+                details.setExceedsNestingDepth("exceeds".equals(nestingMatcher.group(2)));
+                details.setMaxNestingDepth(Integer.parseInt(nestingMatcher.group(3)));
+            }
+            
+            Pattern responsibilityPattern = Pattern.compile("Handles (\\d+) (?:different )?responsibilit(?:ies|y) \\((exceeds|within) max of (\\d+)");
+            Matcher responsibilityMatcher = responsibilityPattern.matcher(detailedReason);
+            if (responsibilityMatcher.find()) {
+                details.setResponsibilityCount(Integer.parseInt(responsibilityMatcher.group(1)));
+                details.setExceedsResponsibilityCount("exceeds".equals(responsibilityMatcher.group(2)));
+                details.setMaxResponsibilityCount(Integer.parseInt(responsibilityMatcher.group(3)));
+            }
+            
+            details.setSummary("A method is flagged when ANY of these thresholds is exceeded.");
+            
+        } catch (Exception e) {
+            System.err.println("Failed to parse threshold details: " + e.getMessage());
+        }
+        
+        return details;
     }
 }

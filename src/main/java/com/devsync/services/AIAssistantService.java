@@ -154,12 +154,18 @@ public class AIAssistantService {
     
     private String createPrompt(String reportContent) {
         if (reportContent.contains("No issues found")) {
-            return "Great job! Your code analysis shows no issues. Provide 3 quick tips to keep Java code excellent.";
+            return "You are a senior Java code reviewer. The code analysis shows no issues. Provide 3 actionable tips to maintain excellent code quality, focusing on: 1) Code maintainability 2) Performance optimization 3) Best practices. Keep response under 200 words.";
         }
         
-        String limitedContent = reportContent.length() > 2000 ? 
-            reportContent.substring(0, 2000) + "\n..." : reportContent;
-        return "Code issues found:\n" + limitedContent + "\n\nProvide 3 specific fixes for the main issues.";
+        String limitedContent = reportContent.length() > 3000 ? 
+            reportContent.substring(0, 3000) + "\n..." : reportContent;
+        
+        return "You are a senior Java code reviewer. Analyze this code quality report and provide:\n" +
+               "1. Top 3 critical issues that need immediate attention\n" +
+               "2. Specific code refactoring suggestions with examples\n" +
+               "3. Best practices to prevent these issues\n\n" +
+               "Report:\n" + limitedContent + "\n\n" +
+               "Keep response concise (under 300 words) and actionable.";
     }
     
     private boolean isOllamaAvailable() {

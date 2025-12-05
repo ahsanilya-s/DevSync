@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { X, FileText, Folder, Clock, Eye } from 'lucide-react';
-import { VisualReport } from './VisualReport';
+import { X, FileText, Folder, Clock, Eye, Search, Filter, Calendar, TrendingDown } from 'lucide-react';
+import { EnhancedVisualReport } from './EnhancedVisualReport';
 import api from '../api';
 
 export function History({ isOpen, onClose, isDarkMode }) {
   const [history, setHistory] = useState([]);
+  const [filteredHistory, setFilteredHistory] = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
   const [reportContent, setReportContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [showVisualReport, setShowVisualReport] = useState(false);
   const [selectedProjectPath, setSelectedProjectPath] = useState('');
   const [selectedProjectName, setSelectedProjectName] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('date');
 
   useEffect(() => {
     if (isOpen) {
@@ -18,14 +21,46 @@ export function History({ isOpen, onClose, isDarkMode }) {
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    filterAndSortHistory();
+  }, [history, searchTerm, sortBy]);
+
   const fetchHistory = async () => {
     try {
       const userId = localStorage.getItem('userId') || 'anonymous';
       const response = await api.get(`/upload/history?userId=${userId}`);
       setHistory(response.data);
+      setFilteredHistory(response.data);
     } catch (error) {
       console.error('Failed to fetch history:', error);
     }
+  };
+
+  const filterAndSortHistory = () => {
+    let filtered = [...history];
+
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(item => 
+        item.projectName.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      if (sortBy === 'date') {
+        return new Date(b.analysisDate) - new Date(a.analysisDate);
+      } else if (sortBy === 'issues') {
+        const totalA = a.criticalIssues + a.warnings + a.suggestions;
+        const totalB = b.criticalIssues + b.warnings + b.suggestions;
+        return totalB - totalA;
+      } else if (sortBy === 'name') {
+        return a.projectName.localeCompare(b.projectName);
+      }
+      return 0;
+    });
+
+    setFilteredHistory(filtered);
   };
 
   const handleReportClick = async (reportPath, projectPath, projectName) => {
@@ -63,7 +98,7 @@ export function History({ isOpen, onClose, isDarkMode }) {
       }`}>
         
         {/* History List */}
-        <div className={`w-1/3 border-r p-4 ${
+        <div className={`w-1/3 border-r p-4 flex flex-col ${
           isDarkMode ? 'border-gray-700' : 'border-gray-200'
         }`}>
           <div className="flex items-center justify-between mb-4">
@@ -81,16 +116,55 @@ export function History({ isOpen, onClose, isDarkMode }) {
               <X className="h-5 w-5" />
             </button>
           </div>
+
+          {/* Search and Filter */}
+          <div className="mb-4 space-y-2">
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
+              isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+            }`}>
+              <Search className="h-4 w-4 opacity-50" />
+              <input
+                type="text"
+                placeholder="Search projects..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={`flex-1 bg-transparent outline-none text-sm ${
+                  isDarkMode ? 'text-gray-200' : 'text-gray-900'
+                }`}
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 opacity-50" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className={`flex-1 px-3 py-2 rounded-lg border text-sm ${
+                  isDarkMode ? 'bg-gray-800 border-gray-700 text-gray-200' : 'bg-white border-gray-200 text-gray-900'
+                }`}
+              >
+                <option value="date">Sort by Date</option>
+                <option value="issues">Sort by Issues</option>
+                <option value="name">Sort by Name</option>
+              </select>
+            </div>
+
+            <div className={`text-xs px-2 ${
+              isDarkMode ? 'text-gray-500' : 'text-gray-400'
+            }`}>
+              {filteredHistory.length} of {history.length} projects
+            </div>
+          </div>
           
-          <div className="space-y-2 overflow-y-auto max-h-[calc(80vh-100px)]">
-            {history.length === 0 ? (
+          <div className="flex-1 space-y-2 overflow-y-auto">
+            {filteredHistory.length === 0 ? (
               <p className={`text-center py-8 ${
                 isDarkMode ? 'text-gray-400' : 'text-gray-600'
               }`}>
                 No analysis history found
               </p>
             ) : (
-              history.map((item, index) => (
+              filteredHistory.map((item, index) => (
                 <div
                   key={index}
                   onClick={() => handleReportClick(item.reportPath, item.projectPath, item.projectName)}
@@ -189,7 +263,7 @@ export function History({ isOpen, onClose, isDarkMode }) {
         </div>
       </div>
 
-      <VisualReport
+      <EnhancedVisualReport
         reportContent={reportContent}
         isOpen={showVisualReport}
         onClose={() => setShowVisualReport(false)}
