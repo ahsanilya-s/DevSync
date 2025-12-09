@@ -34,11 +34,16 @@ export default function Signup(){
                 <div className="signupFormWrapper">
                     {/* Logo */}
                     <div className="signupBrandArea">
-                        <img 
-                            src="/logo_for_blacktheme.png" 
-                            alt="DevSync" 
-                            className="signupLogo" 
-                        />
+                        <div className="flex items-center gap-3 mb-6">
+                            <img 
+                                src="/logo_for_blacktheme.png" 
+                                alt="DevSync" 
+                                className="signupLogo" 
+                            />
+                            <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                                DevSync
+                            </span>
+                        </div>
                         <h1 className="signupMainTitle">Join DevSync</h1>
                         <p className="signupSubtext">Create your account and start analyzing code</p>
                     </div>

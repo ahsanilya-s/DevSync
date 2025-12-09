@@ -6,6 +6,12 @@ import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import java.util.*;
 
 public class UnnecessaryAbstractionDetector {
+    
+    private int maxUsage = 1;
+    
+    public void setMaxUsage(int maxUsage) {
+        this.maxUsage = maxUsage;
+    }
 
     public List<String> detect(CompilationUnit cu) {
         List<String> issues = new ArrayList<>();
@@ -15,8 +21,8 @@ public class UnnecessaryAbstractionDetector {
         
         analyzer.getUnnecessaryAbstractions().forEach(absInfo -> {
             // THRESHOLD CHECK FIRST - binary detection
-            // Interface with only 1 implementation AND used <= 1 time = unnecessary
-            if (!absInfo.hasOnlyOneImplementation || absInfo.usageCount > 1) {
+            // Interface with only 1 implementation AND used <= maxUsage = unnecessary
+            if (!absInfo.hasOnlyOneImplementation || absInfo.usageCount > maxUsage) {
                 return; // NO SMELL - exit immediately
             }
             
@@ -27,7 +33,7 @@ public class UnnecessaryAbstractionDetector {
             String suggestions = generateSuggestions(absInfo);
             
             issues.add(String.format(
-                "%s [UnnecessaryAbstraction] %s:%d - %s '%s' (Score: %.2f) - %s | Suggestions: %s | DetailedReason: This abstraction is unnecessary because it is used only %d time(s), %s, and %s. Complexity score: %.2f. Unnecessary abstractions add complexity without benefit. | ThresholdDetails: {\"usageCount\":%d,\"maxUsage\":1,\"hasOnlyOneImplementation\":%b,\"isSimpleWrapper\":%b,\"complexityScore\":%.2f,\"summary\":\"Abstractions are flagged when only 1 implementation AND usage <= 1.\"}" ,
+                "%s [UnnecessaryAbstraction] %s:%d - %s '%s' (Score: %.2f) - %s | Suggestions: %s | DetailedReason: This abstraction is unnecessary because it is used only %d time(s), %s, and %s. Complexity score: %.2f. Unnecessary abstractions add complexity without benefit. | ThresholdDetails: {\"usageCount\":%d,\"maxUsage\":%d,\"hasOnlyOneImplementation\":%b,\"isSimpleWrapper\":%b,\"complexityScore\":%.2f,\"summary\":\"Abstractions are flagged when only 1 implementation AND usage <= %d.\"}" ,
                 severity,
                 cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
                 absInfo.lineNumber,
@@ -40,7 +46,7 @@ public class UnnecessaryAbstractionDetector {
                 absInfo.hasOnlyOneImplementation ? "has only one implementation" : "has multiple implementations",
                 absInfo.isSimpleWrapper ? "acts as a simple wrapper" : "provides meaningful abstraction",
                 complexityScore,
-                absInfo.usageCount, absInfo.hasOnlyOneImplementation, absInfo.isSimpleWrapper, complexityScore
+                absInfo.usageCount, maxUsage, absInfo.hasOnlyOneImplementation, absInfo.isSimpleWrapper, complexityScore, maxUsage
             ));
         });
         

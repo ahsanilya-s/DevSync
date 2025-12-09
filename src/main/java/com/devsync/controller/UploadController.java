@@ -55,17 +55,29 @@ public class UploadController {
     public ResponseEntity<String> getReport(@RequestParam("path") String reportPath, 
                                            @RequestParam("userId") String userId) {
         try {
+            System.out.println("📄 Report request - Path: " + reportPath + ", UserId: " + userId);
+            
             // Verify user owns this report
-            boolean hasAccess = analysisHistoryRepository.findByUserIdOrderByAnalysisDateDesc(userId)
-                .stream().anyMatch(history -> history.getReportPath().equals(reportPath));
+            List<AnalysisHistory> userHistory = analysisHistoryRepository.findByUserIdOrderByAnalysisDateDesc(userId);
+            System.out.println("📋 User has " + userHistory.size() + " reports in history");
+            
+            boolean hasAccess = userHistory.stream()
+                .anyMatch(history -> {
+                    System.out.println("  Checking: " + history.getReportPath());
+                    return history.getReportPath().equals(reportPath);
+                });
             
             if (!hasAccess) {
+                System.err.println("❌ Access denied - report not found in user history");
                 return ResponseEntity.status(403).body("❌ Access denied to this report");
             }
             
+            System.out.println("✅ Access granted, reading report...");
             String reportContent = ReportGenerator.readReportContent(reportPath);
+            System.out.println("✅ Report content loaded: " + reportContent.length() + " characters");
             return ResponseEntity.ok(reportContent);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.badRequest().body("❌ Failed to read report: " + e.getMessage());
         }
     }

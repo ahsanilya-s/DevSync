@@ -9,9 +9,15 @@ import java.util.*;
 
 public class MagicNumberDetector {
     
+    private int threshold = 3;
+    
     private static final Set<String> ACCEPTABLE_NUMBERS = Set.of(
         "0", "1", "-1", "0.0", "1.0", "-1.0", "2", "100", "1000"
     );
+    
+    public void setThreshold(int threshold) {
+        this.threshold = threshold;
+    }
     
     private static final Set<String> SAFE_CONTEXTS = Set.of(
         "test", "constant", "final", "static"

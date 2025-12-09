@@ -8,14 +8,23 @@ import java.util.*;
 
 public class ComplexConditionalDetector {
     
-    private static final int BASE_COMPLEXITY_THRESHOLD = 4;
-    private static final int CRITICAL_COMPLEXITY_THRESHOLD = 8;
-    private static final int MAX_NESTING_DEPTH = 3;
+    private int BASE_COMPLEXITY_THRESHOLD = 4;
+    private int CRITICAL_COMPLEXITY_THRESHOLD = 8;
+    private int MAX_NESTING_DEPTH = 3;
+    
+    public void setMaxOperators(int maxOperators) {
+        this.BASE_COMPLEXITY_THRESHOLD = maxOperators;
+        this.CRITICAL_COMPLEXITY_THRESHOLD = maxOperators * 2;
+    }
+    
+    public void setMaxNestingDepth(int maxNestingDepth) {
+        this.MAX_NESTING_DEPTH = maxNestingDepth;
+    }
 
     public List<String> detect(CompilationUnit cu) {
         List<String> issues = new ArrayList<>();
         
-        ConditionalAnalyzer analyzer = new ConditionalAnalyzer();
+        ConditionalAnalyzer analyzer = new ConditionalAnalyzer(BASE_COMPLEXITY_THRESHOLD, MAX_NESTING_DEPTH);
         cu.accept(analyzer, null);
         
         analyzer.getComplexConditionals().forEach(condInfo -> {
@@ -251,6 +260,13 @@ public class ComplexConditionalDetector {
     
     private static class ConditionalAnalyzer extends VoidVisitorAdapter<Void> {
         private final List<ConditionalInfo> complexConditionals = new ArrayList<>();
+        private final int baseThreshold;
+        private final int maxNesting;
+        
+        ConditionalAnalyzer(int baseThreshold, int maxNesting) {
+            this.baseThreshold = baseThreshold;
+            this.maxNesting = maxNesting;
+        }
         
         public List<ConditionalInfo> getComplexConditionals() {
             return complexConditionals;
@@ -280,8 +296,8 @@ public class ComplexConditionalDetector {
         private void analyzeCondition(String type, Expression condition, int lineNumber) {
             ConditionalInfo info = new ConditionalInfo(type, lineNumber, condition);
             
-            if (info.operatorCount >= BASE_COMPLEXITY_THRESHOLD || 
-                info.nestingDepth > MAX_NESTING_DEPTH) {
+            if (info.operatorCount >= baseThreshold || 
+                info.nestingDepth > maxNesting) {
                 complexConditionals.add(info);
             }
         }

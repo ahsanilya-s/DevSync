@@ -20,6 +20,10 @@ public class LongMethodDetector {
         this.baseLineThreshold = Math.max(10, maxLength / 2);
         this.criticalLineThreshold = maxLength;
     }
+    
+    public void setMaxComplexity(int maxComplexity) {
+        // Complexity is handled internally, but we can store it if needed
+    }
 
     private static final Map<String, Double> METHOD_TYPE_WEIGHTS = Map.of(
             "getter", 0.3,

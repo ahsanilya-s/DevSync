@@ -218,14 +218,14 @@ export function History({ isOpen, onClose, isDarkMode }) {
         </div>
 
         {/* Report Content */}
-        <div className="flex-1 p-4">
+        <div className="flex-1 p-4 overflow-hidden flex flex-col">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
             </div>
           ) : selectedReport ? (
-            <div>
-              <div className="flex items-center justify-between mb-4">
+            <div className="h-full flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between mb-4 flex-shrink-0">
                 <h4 className={`text-lg font-semibold ${
                   isDarkMode ? 'text-gray-100' : 'text-gray-900'
                 }`}>
@@ -243,11 +243,11 @@ export function History({ isOpen, onClose, isDarkMode }) {
                   Visual Report
                 </button>
               </div>
-              <div className={`p-4 rounded-lg border font-mono text-sm whitespace-pre-wrap overflow-y-auto max-h-[calc(80vh-120px)] ${
+              <div className={`flex-1 p-4 rounded-lg border font-mono text-xs overflow-auto ${
                 isDarkMode 
                   ? 'bg-gray-800/50 border-gray-700 text-gray-300'
                   : 'bg-gray-50 border-gray-200 text-gray-700'
-              }`}>
+              }`} style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap', overflowWrap: 'break-word' }}>
                 {reportContent}
               </div>
             </div>

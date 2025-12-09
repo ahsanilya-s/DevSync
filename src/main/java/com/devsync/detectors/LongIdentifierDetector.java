@@ -17,6 +17,10 @@ public class LongIdentifierDetector {
         this.methodThreshold = maxLength;
         this.classThreshold = maxLength + 5;
     }
+    
+    public void setMinLength(int minLength) {
+        // Min length can be used for detecting too-short identifiers
+    }
 
     public List<String> detect(CompilationUnit cu) {
         List<String> issues = new ArrayList<>();

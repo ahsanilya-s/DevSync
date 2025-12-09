@@ -9,6 +9,9 @@ import { VisualReport } from '../components/VisualReport'
 import { EnhancedVisualReport } from '../components/EnhancedVisualReport'
 import { AdvancedVisualReport } from '../components/AdvancedVisualReport'
 import { AnalysisResults } from '../components/AnalysisResults'
+import { GitHubIntegration } from '../components/GitHubIntegration'
+import { UserProfile } from '../components/UserProfile'
+import { WelcomeGuide } from '../components/WelcomeGuide'
 import { useState as useReactState } from 'react'
 import { Toaster } from '../components/ui/sonner'
 import { toast } from 'sonner'
@@ -19,9 +22,21 @@ import './Home.css'
 export default function Home() {
   const navigate = useNavigate()
   const location = useLocation()
+  
+  // Security check: Verify authentication on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    const userId = localStorage.getItem('userId')
+    if (!token || !userId) {
+      navigate('/login', { replace: true })
+    }
+  }, [])
+  
   const [showResults, setShowResults] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [githubOpen, setGithubOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
   const [_isAnalyzing, setIsAnalyzing] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [analysisResults, setAnalysisResults] = useState(null)
@@ -31,7 +46,7 @@ export default function Home() {
   const [projectName, setProjectName] = useState('')
   const [visualReportData, setVisualReportData] = useState(null)
   const [showVisualReport, setShowVisualReport] = useState(false)
-  const [activeSection, setActiveSection] = useState('upload')
+  const [activeSection, setActiveSection] = useState('guide')
   const [useEnhancedReport, setUseEnhancedReport] = useState(true)
 
   // Handle returning from file viewer
@@ -69,6 +84,14 @@ export default function Home() {
     setProjectName('')
     setActiveSection('upload')
     toast.info("Starting new analysis session")
+  }
+
+  const handleStartAnalysis = () => {
+    setActiveSection('upload')
+    setHistoryOpen(false)
+    setSettingsOpen(false)
+    setGithubOpen(false)
+    setProfileOpen(false)
   }
 
   const handleVisualReport = async (file) => {
@@ -223,6 +246,9 @@ export default function Home() {
   }
 
   const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('userId')
+    localStorage.removeItem('username')
     toast.success('Logged out successfully')
     navigate('/')
   }
@@ -244,8 +270,11 @@ export default function Home() {
       {/* Sidebar */}
       <Sidebar
         onNewAnalysis={handleNewAnalysis}
+        onStartAnalysis={handleStartAnalysis}
         onSettingsClick={() => { setSettingsOpen(true); setActiveSection('settings'); }}
         onHistoryClick={() => { setHistoryOpen(true); setActiveSection('history'); }}
+        onGitHubClick={() => { setGithubOpen(true); setActiveSection('github'); }}
+        onUserAccountClick={() => { setProfileOpen(true); setActiveSection('profile'); }}
         isDarkMode={isDarkMode}
         activeSection={activeSection}
       />
@@ -260,7 +289,9 @@ export default function Home() {
         />
         
         <main className="contentArea">
-          {!showResults ? (
+          {activeSection === 'guide' ? (
+            <WelcomeGuide isDarkMode={isDarkMode} />
+          ) : !showResults ? (
             <UploadArea onAnalyze={handleAnalyze} onVisualReport={handleVisualReport} isDarkMode={isDarkMode} />
           ) : (
             <div className="resultsContainer">
@@ -286,6 +317,20 @@ export default function Home() {
       <History
         isOpen={historyOpen}
         onClose={() => { setHistoryOpen(false); setActiveSection('upload'); }}
+        isDarkMode={isDarkMode}
+      />
+
+      {/* GitHub Integration Modal */}
+      <GitHubIntegration
+        isOpen={githubOpen}
+        onClose={() => { setGithubOpen(false); setActiveSection('upload'); }}
+        isDarkMode={isDarkMode}
+      />
+
+      {/* User Profile Modal */}
+      <UserProfile
+        isOpen={profileOpen}
+        onClose={() => { setProfileOpen(false); setActiveSection('upload'); }}
         isDarkMode={isDarkMode}
       />
 

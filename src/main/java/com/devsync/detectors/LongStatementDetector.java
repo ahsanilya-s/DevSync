@@ -9,11 +9,25 @@ import java.util.*;
 
 public class LongStatementDetector {
 
-    private static final int BASE_TOKEN_THRESHOLD = 40;
-    private static final int CRITICAL_TOKEN_THRESHOLD = 80;
-    private static final int BASE_CHAR_THRESHOLD = 250;
-    private static final int CRITICAL_CHAR_THRESHOLD = 500;
-    private static final int MAX_METHOD_CHAIN = 5;
+    private int BASE_TOKEN_THRESHOLD = 40;
+    private int CRITICAL_TOKEN_THRESHOLD = 80;
+    private int BASE_CHAR_THRESHOLD = 250;
+    private int CRITICAL_CHAR_THRESHOLD = 500;
+    private int MAX_METHOD_CHAIN = 5;
+    
+    public void setMaxTokens(int maxTokens) {
+        this.BASE_TOKEN_THRESHOLD = maxTokens;
+        this.CRITICAL_TOKEN_THRESHOLD = maxTokens * 2;
+    }
+    
+    public void setMaxChars(int maxChars) {
+        this.BASE_CHAR_THRESHOLD = maxChars;
+        this.CRITICAL_CHAR_THRESHOLD = maxChars * 2;
+    }
+    
+    public void setMaxChainLength(int maxChainLength) {
+        this.MAX_METHOD_CHAIN = maxChainLength;
+    }
 
     // Keywords that indicate anonymous class/lambda patterns
     private static final Set<String> ANONYMOUS_INDICATORS = Set.of(

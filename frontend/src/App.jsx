@@ -10,7 +10,7 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import AdminPanel from './pages/AdminPanel'
 import AdminLogin from './pages/AdminLogin'
-import Dashboard from './pages/Dashboard'
+import ProtectedRoute from './components/ProtectedRoute'
 
 // Import new pages
 import Features from './pages/Features'
@@ -89,12 +89,15 @@ function LandingPage({ onLogin, onSignup, isDarkMode, setIsDarkMode }) {
           <div className="container mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               {/* Logo */}
-              <div className="flex items-center ml-4">
+              <div className="flex items-center gap-3 ml-4">
                 <img 
                   src={isDarkMode ? "/logo_for_blacktheme.png" : "/logo_for_whitetheme.png"} 
                   alt="DevSync" 
                   className="h-10 w-auto transition-opacity duration-500" 
                 />
+                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                  DevSync
+                </span>
               </div>
 
               {/* Right Side Buttons */}
@@ -433,12 +436,15 @@ function LandingPage({ onLogin, onSignup, isDarkMode, setIsDarkMode }) {
               <div className="container mx-auto max-w-6xl px-8">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
                   <div>
-                    <div className="flex items-center mb-4">
+                    <div className="flex items-center gap-3 mb-4">
                       <img 
                         src={isDarkMode ? "/logo_for_blacktheme.png" : "/logo_for_whitetheme.png"} 
                         alt="DevSync" 
                         className="h-8 w-auto transition-opacity duration-500" 
                       />
+                      <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                        DevSync
+                      </span>
                     </div>
                     <p className={`${
                       isDarkMode ? 'text-gray-400' : 'text-gray-600'
@@ -530,11 +536,10 @@ export default function App() {
         } />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/home" element={<Home />} />
+        <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/admin/dashboard" element={<AdminPanel />} />
-        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/features" element={<Features />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/documentation" element={<Documentation />} />

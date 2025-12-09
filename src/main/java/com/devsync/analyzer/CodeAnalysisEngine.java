@@ -5,10 +5,12 @@ import com.devsync.config.AnalysisConfig;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ParseResult;
+import org.springframework.stereotype.Component;
 import java.io.File;
 import java.util.*;
 import java.util.logging.Logger;
 
+@Component
 public class CodeAnalysisEngine {
     
     private static final Logger logger = Logger.getLogger(CodeAnalysisEngine.class.getName());
@@ -31,46 +33,75 @@ public class CodeAnalysisEngine {
         }
         
         this.enabledDetectors = new HashMap<>();
-        enabledDetectors.put("MissingDefaultDetector", settings.getMissingDefaultEnabled());
-        enabledDetectors.put("EmptyCatchDetector", settings.getEmptyCatchEnabled());
         enabledDetectors.put("LongMethodDetector", settings.getLongMethodEnabled());
         enabledDetectors.put("LongParameterListDetector", settings.getLongParameterEnabled());
-        enabledDetectors.put("MagicNumberDetector", settings.getMagicNumberEnabled());
         enabledDetectors.put("LongIdentifierDetector", settings.getLongIdentifierEnabled());
-        
-        // ✅ ENABLE ALL OTHER DETECTORS (always on)
-        enabledDetectors.put("BrokenModularizationDetector", true);
-        enabledDetectors.put("ComplexConditionalDetector", true);
-        enabledDetectors.put("DeficientEncapsulationDetector", true);
-        enabledDetectors.put("LongStatementDetector", true);
-        enabledDetectors.put("UnnecessaryAbstractionDetector", true);
+        enabledDetectors.put("MagicNumberDetector", settings.getMagicNumberEnabled());
+        enabledDetectors.put("MissingDefaultDetector", settings.getMissingDefaultEnabled());
+        enabledDetectors.put("EmptyCatchDetector", settings.getEmptyCatchEnabled());
+        enabledDetectors.put("ComplexConditionalDetector", settings.getComplexConditionalEnabled());
+        enabledDetectors.put("LongStatementDetector", settings.getLongStatementEnabled());
+        enabledDetectors.put("BrokenModularizationDetector", settings.getBrokenModularizationEnabled());
+        enabledDetectors.put("DeficientEncapsulationDetector", settings.getDeficientEncapsulationEnabled());
+        enabledDetectors.put("UnnecessaryAbstractionDetector", settings.getUnnecessaryAbstractionEnabled());
         
         System.out.println("=== CodeAnalysisEngine Configuration ===");
-        System.out.println("MissingDefaultDetector: " + settings.getMissingDefaultEnabled());
-        System.out.println("EmptyCatchDetector: " + settings.getEmptyCatchEnabled());
-        System.out.println("LongMethodDetector: " + settings.getLongMethodEnabled());
-        System.out.println("LongParameterListDetector: " + settings.getLongParameterEnabled());
-        System.out.println("MagicNumberDetector: " + settings.getMagicNumberEnabled());
-        System.out.println("LongIdentifierDetector: " + settings.getLongIdentifierEnabled());
-        System.out.println("BrokenModularizationDetector: true (always enabled)");
-        System.out.println("ComplexConditionalDetector: true (always enabled)");
-        System.out.println("DeficientEncapsulationDetector: true (always enabled)");
-        System.out.println("LongStatementDetector: true (always enabled)");
-        System.out.println("UnnecessaryAbstractionDetector: true (always enabled)");
+        enabledDetectors.forEach((name, enabled) -> 
+            System.out.println(name + ": " + enabled));
         
-        this.maxMethodLength = settings.getMaxMethodLength();
-        this.maxParameterCount = settings.getMaxParameterCount();
-        this.maxIdentifierLength = settings.getMaxIdentifierLength();
-        
-        // Update detector configurations
+        // Configure Long Method Detector
         if (detectors.get("LongMethodDetector") instanceof LongMethodDetector) {
-            ((LongMethodDetector) detectors.get("LongMethodDetector")).setMaxLength(maxMethodLength);
+            LongMethodDetector detector = (LongMethodDetector) detectors.get("LongMethodDetector");
+            detector.setMaxLength(settings.getMaxMethodLength());
+            detector.setMaxComplexity(settings.getMaxMethodComplexity());
         }
+        
+        // Configure Long Parameter List Detector
         if (detectors.get("LongParameterListDetector") instanceof LongParameterListDetector) {
-            ((LongParameterListDetector) detectors.get("LongParameterListDetector")).setMaxParameters(maxParameterCount);
+            ((LongParameterListDetector) detectors.get("LongParameterListDetector"))
+                .setMaxParameters(settings.getMaxParameterCount());
         }
+        
+        // Configure Long Identifier Detector
         if (detectors.get("LongIdentifierDetector") instanceof LongIdentifierDetector) {
-            ((LongIdentifierDetector) detectors.get("LongIdentifierDetector")).setMaxLength(maxIdentifierLength);
+            LongIdentifierDetector detector = (LongIdentifierDetector) detectors.get("LongIdentifierDetector");
+            detector.setMaxLength(settings.getMaxIdentifierLength());
+            detector.setMinLength(settings.getMinIdentifierLength());
+        }
+        
+        // Configure Magic Number Detector
+        if (detectors.get("MagicNumberDetector") instanceof MagicNumberDetector) {
+            ((MagicNumberDetector) detectors.get("MagicNumberDetector"))
+                .setThreshold(settings.getMagicNumberThreshold());
+        }
+        
+        // Configure Complex Conditional Detector
+        if (detectors.get("ComplexConditionalDetector") instanceof ComplexConditionalDetector) {
+            ComplexConditionalDetector detector = (ComplexConditionalDetector) detectors.get("ComplexConditionalDetector");
+            detector.setMaxOperators(settings.getMaxConditionalOperators());
+            detector.setMaxNestingDepth(settings.getMaxNestingDepth());
+        }
+        
+        // Configure Long Statement Detector
+        if (detectors.get("LongStatementDetector") instanceof LongStatementDetector) {
+            LongStatementDetector detector = (LongStatementDetector) detectors.get("LongStatementDetector");
+            detector.setMaxTokens(settings.getMaxStatementTokens());
+            detector.setMaxChars(settings.getMaxStatementChars());
+            detector.setMaxChainLength(settings.getMaxMethodChainLength());
+        }
+        
+        // Configure Broken Modularization Detector
+        if (detectors.get("BrokenModularizationDetector") instanceof BrokenModularizationDetector) {
+            BrokenModularizationDetector detector = (BrokenModularizationDetector) detectors.get("BrokenModularizationDetector");
+            detector.setMaxResponsibilities(settings.getMaxResponsibilities());
+            detector.setMinCohesion(settings.getMinCohesionIndex());
+            detector.setMaxCoupling(settings.getMaxCouplingCount());
+        }
+        
+        // Configure Unnecessary Abstraction Detector
+        if (detectors.get("UnnecessaryAbstractionDetector") instanceof UnnecessaryAbstractionDetector) {
+            ((UnnecessaryAbstractionDetector) detectors.get("UnnecessaryAbstractionDetector"))
+                .setMaxUsage(settings.getMaxAbstractionUsage());
         }
     }
     

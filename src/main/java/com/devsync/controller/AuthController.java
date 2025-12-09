@@ -6,6 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "http://localhost:5173")
@@ -47,7 +50,8 @@ public class AuthController {
             
             User found = userService.login(user.getEmail(), user.getPassword());
             if (found != null) {
-                return ResponseEntity.ok(new LoginResponse("Login successful", found.getId().toString(), found.getUsername()));
+                String token = java.util.UUID.randomUUID().toString();
+                return ResponseEntity.ok(new LoginResponse("Login successful", found.getId().toString(), found.getUsername(), token));
             } else {
                 return ResponseEntity.badRequest().body("Invalid credentials");
             }
@@ -61,20 +65,42 @@ public class AuthController {
         private String message;
         private String userId;
         private String username;
+        private String token;
         
-        public LoginResponse(String message, String userId, String username) {
+        public LoginResponse(String message, String userId, String username, String token) {
             this.message = message;
             this.userId = userId;
             this.username = username;
+            this.token = token;
         }
         
         public String getMessage() { return message; }
         public String getUserId() { return userId; }
         public String getUsername() { return username; }
+        public String getToken() { return token; }
     }
 
     @GetMapping("/users")
     public ResponseEntity<?> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
+    }
+
+    @GetMapping("/profile/{userId}")
+    public ResponseEntity<?> getUserProfile(@PathVariable String userId) {
+        try {
+            User user = userService.getUserById(Long.parseLong(userId));
+            if (user == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            Map<String, Object> profile = new HashMap<>();
+            profile.put("username", user.getUsername());
+            profile.put("email", user.getEmail());
+            profile.put("userId", user.getId());
+            
+            return ResponseEntity.ok(profile);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Failed to get profile: " + e.getMessage());
+        }
     }
 }

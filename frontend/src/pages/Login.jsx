@@ -14,9 +14,10 @@ export default function Login(){
     async function handleLogin(){
         try {
             const res = await api.post('/auth/login', { email, password })
-            // Store user info in localStorage
+            // Store user info and token in localStorage
             localStorage.setItem('userId', res.data.userId)
             localStorage.setItem('username', res.data.username)
+            localStorage.setItem('token', res.data.token)
             toast.success('Login successful!')
             nav('/home')
         } catch(e) {
@@ -36,11 +37,16 @@ export default function Login(){
                 <div className="formContainer">
                     {/* Logo */}
                     <div className="brandSection">
-                        <img 
-                            src="/logo_for_blacktheme.png" 
-                            alt="DevSync" 
-                            className="brandLogo" 
-                        />
+                        <div className="flex items-center gap-3 mb-6">
+                            <img 
+                                src="/logo_for_blacktheme.png" 
+                                alt="DevSync" 
+                                className="brandLogo" 
+                            />
+                            <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                                DevSync
+                            </span>
+                        </div>
                         <h1 className="brandTitle">Welcome Back</h1>
                         <p className="brandSubtitle">Sign in to continue to DevSync</p>
                     </div>
