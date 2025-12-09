@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { X, AlertTriangle, CheckCircle, TrendingUp, FileText, Code, Bug, Download, Filter, Search, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from './ui/button'
 import jsPDF from 'jspdf'
+import api from '../api'
 
 export function EnhancedVisualReport({ reportContent, isOpen, onClose, isDarkMode, projectName, projectPath }) {
   const [reportData, setReportData] = useState(null)
@@ -469,6 +470,227 @@ export function EnhancedVisualReport({ reportContent, isOpen, onClose, isDarkMod
     pdf.save(`${projectName || 'project'}-quality-report-${new Date().toISOString().split('T')[0]}.pdf`)
   }
 
+  const handleExportDetailedReport = async () => {
+    if (!reportData) return
+
+    const qualityGrade = getQualityGrade(reportData.qualityScore)
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detailed Code Quality Report - ${projectName || 'Project'}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f9fafb; padding: 20px; }
+    .container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .header { padding: 24px; border-bottom: 1px solid #e5e7eb; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px 8px 0 0; }
+    .header h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+    .header p { opacity: 0.9; font-size: 14px; }
+    .content { padding: 24px; }
+    .section { margin-bottom: 32px; }
+    .section-title { font-size: 20px; font-weight: 700; margin-bottom: 16px; color: #1f2937; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; }
+    .issue-card { margin-bottom: 24px; border-radius: 8px; border-left: 4px solid; padding: 20px; background: #fafafa; page-break-inside: avoid; }
+    .issue-critical { border-color: #ef4444; background: #fef2f2; }
+    .issue-high { border-color: #eab308; background: #fefce8; }
+    .issue-medium { border-color: #f97316; background: #fff7ed; }
+    .issue-low { border-color: #3b82f6; background: #eff6ff; }
+    .issue-header { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+    .badge { padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+    .badge-critical { background: #ef4444; color: white; }
+    .badge-high { background: #eab308; color: white; }
+    .badge-medium { background: #f97316; color: white; }
+    .badge-low { background: #3b82f6; color: white; }
+    .issue-location { font-family: 'Courier New', monospace; font-size: 12px; color: #6b7280; }
+    .issue-description { margin: 12px 0; color: #374151; line-height: 1.6; }
+    .code-block { background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 6px; overflow-x: auto; margin: 12px 0; font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.5; }
+    .code-block pre { margin: 0; white-space: pre; }
+    .explanation-box { background: #dbeafe; border-left: 3px solid #3b82f6; padding: 12px; border-radius: 4px; margin: 12px 0; }
+    .explanation-box h4 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #1e40af; }
+    .explanation-box p { font-size: 13px; color: #1e3a8a; line-height: 1.5; }
+    .suggestion-box { background: #dcfce7; border-left: 3px solid #16a34a; padding: 12px; border-radius: 4px; margin: 12px 0; }
+    .suggestion-box h4 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #15803d; }
+    .suggestion-box p { font-size: 13px; color: #166534; line-height: 1.5; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .metric-card { background: #f9fafb; padding: 16px; border-radius: 6px; text-align: center; border: 1px solid #e5e7eb; }
+    .metric-value { font-size: 28px; font-weight: 700; color: #1f2937; }
+    .metric-label { font-size: 12px; color: #6b7280; margin-top: 4px; }
+    .footer { padding: 16px 24px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 12px; }
+    @media print { body { padding: 0; } .issue-card { page-break-inside: avoid; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📊 Detailed Code Quality Report</h1>
+      <p>${projectName || 'Project Analysis'} - Generated on ${new Date().toLocaleString()}</p>
+    </div>
+    
+    <div class="content">
+      <!-- Summary Metrics -->
+      <div class="section">
+        <div class="section-title">Summary</div>
+        <div class="metrics">
+          <div class="metric-card">
+            <div class="metric-value" style="color: ${qualityGrade.grade === 'A+' || qualityGrade.grade === 'A' ? '#16a34a' : qualityGrade.grade === 'B' ? '#3b82f6' : qualityGrade.grade === 'C' ? '#eab308' : '#ef4444'};">${reportData.qualityScore}</div>
+            <div class="metric-label">Quality Score (${qualityGrade.grade})</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value">${reportData.totalFiles}</div>
+            <div class="metric-label">Files Analyzed</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value" style="color: #ef4444;">${reportData.totalIssues}</div>
+            <div class="metric-label">Total Issues</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value" style="color: #ef4444;">${reportData.severityStats.critical}</div>
+            <div class="metric-label">Critical</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value" style="color: #eab308;">${reportData.severityStats.high}</div>
+            <div class="metric-label">High</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value" style="color: #f97316;">${reportData.severityStats.medium}</div>
+            <div class="metric-label">Medium</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-value" style="color: #3b82f6;">${reportData.severityStats.low}</div>
+            <div class="metric-label">Low</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Issues with Code -->
+      <div class="section">
+        <div class="section-title">Detailed Issues with Source Code</div>
+        ${await generateDetailedIssuesHTML(reportData.issues)}
+      </div>
+    </div>
+
+    <div class="footer">
+      Generated by DevSync - Java Code Analysis Tool
+    </div>
+  </div>
+</body>
+</html>`
+
+    const blob = new Blob([html], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${projectName || 'project'}-detailed-report-${new Date().toISOString().split('T')[0]}.html`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  const generateDetailedIssuesHTML = async (issues) => {
+    let html = ''
+    
+    for (const issue of issues) {
+      const severityClass = `issue-${issue.severity}`
+      const codeSnippet = await fetchCodeSnippet(issue.file, issue.line)
+      
+      html += `
+        <div class="issue-card ${severityClass}">
+          <div class="issue-header">
+            <span class="badge badge-${issue.severity}">${issue.severity}</span>
+            <strong>${issue.type}</strong>
+            <span class="issue-location">${issue.file}:${issue.line}</span>
+          </div>
+          
+          <div class="issue-description">
+            <strong>Issue:</strong> ${escapeHtml(issue.description)}
+          </div>
+          
+          ${codeSnippet ? `
+            <div class="code-block">
+              <pre>${escapeHtml(codeSnippet)}</pre>
+            </div>
+          ` : ''}
+          
+          <div class="explanation-box">
+            <h4>❓ Why is this a code smell?</h4>
+            <p>${getWhyExplanation(issue)}</p>
+          </div>
+          
+          <div class="suggestion-box">
+            <h4>💡 How to fix it</h4>
+            <p>${getFixSuggestion(issue)}</p>
+          </div>
+        </div>
+      `
+    }
+    
+    return html
+  }
+
+  const fetchCodeSnippet = async (fileName, lineNumber) => {
+    try {
+      const response = await api.get('/fileview/content', {
+        params: { 
+          projectPath, 
+          fileName, 
+          userId: localStorage.getItem('userId') || 'anonymous' 
+        }
+      })
+      
+      const lines = response.data.content.split('\n')
+      const startLine = Math.max(0, lineNumber - 6)
+      const endLine = Math.min(lines.length, lineNumber + 5)
+      
+      let snippet = ''
+      for (let i = startLine; i < endLine; i++) {
+        const lineNum = (i + 1).toString().padStart(4, ' ')
+        const marker = (i + 1) === lineNumber ? '→' : ' '
+        snippet += `${lineNum} ${marker} ${lines[i]}\n`
+      }
+      
+      return snippet
+    } catch (error) {
+      return null
+    }
+  }
+
+  const escapeHtml = (text) => {
+    const div = document.createElement('div')
+    div.textContent = text
+    return div.innerHTML
+  }
+
+  const getWhyExplanation = (issue) => {
+    const explanations = {
+      'LongMethod': 'Long methods are harder to understand, test, and maintain. They often violate the Single Responsibility Principle and make code reuse difficult.',
+      'LargeClass': 'Large classes indicate too many responsibilities, making the code harder to understand and maintain. They violate the Single Responsibility Principle.',
+      'LongParameterList': 'Methods with many parameters are difficult to understand and use. They often indicate that the method is doing too much.',
+      'DuplicatedCode': 'Duplicated code makes maintenance harder as changes need to be made in multiple places, increasing the risk of bugs.',
+      'DeadCode': 'Dead code clutters the codebase, makes it harder to understand, and can confuse developers about what code is actually being used.',
+      'ComplexConditional': 'Complex conditionals are hard to understand and test. They make the code flow difficult to follow.',
+      'MagicNumber': 'Magic numbers make code less readable and maintainable. The meaning of the number is not clear without context.',
+      'EmptyCatchBlock': 'Empty catch blocks hide errors and make debugging difficult. Exceptions should be properly handled or logged.',
+      'GodClass': 'God classes know too much and do too much, making them difficult to understand, test, and maintain.'
+    }
+    return explanations[issue.type] || 'This code pattern can lead to maintenance issues and reduced code quality.'
+  }
+
+  const getFixSuggestion = (issue) => {
+    const suggestions = {
+      'LongMethod': 'Break down the method into smaller, focused methods. Extract logical blocks into separate methods with descriptive names. Apply the Single Responsibility Principle.',
+      'LargeClass': 'Split the class into smaller classes, each with a single responsibility. Use composition to combine functionality when needed.',
+      'LongParameterList': 'Group related parameters into parameter objects. Consider using the Builder pattern for complex object creation.',
+      'DuplicatedCode': 'Extract the duplicated code into a reusable method or class. Use inheritance or composition to share common functionality.',
+      'DeadCode': 'Remove unused code to keep the codebase clean and maintainable. Use version control to preserve history if needed.',
+      'ComplexConditional': 'Extract complex conditions into well-named boolean methods. Consider using the Strategy pattern for complex branching logic.',
+      'MagicNumber': 'Replace magic numbers with named constants that explain their purpose. Use enums for related constant values.',
+      'EmptyCatchBlock': 'Add proper error handling: log the exception, rethrow it, or handle it appropriately. Never silently ignore exceptions.',
+      'GodClass': 'Identify distinct responsibilities and extract them into separate classes. Apply the Single Responsibility Principle and proper separation of concerns.'
+    }
+    return suggestions[issue.type] || 'Refactor the code following SOLID principles and clean code practices.'
+  }
+
   const handleExportReport = () => {
     if (!reportData) return
 
@@ -734,10 +956,11 @@ export function EnhancedVisualReport({ reportContent, isOpen, onClose, isDarkMod
                   isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'
                 }`}
               >
-                <option value="pdf">PDF</option>
-                <option value="html">HTML</option>
+                <option value="pdf">PDF (Summary)</option>
+                <option value="html">HTML (Summary)</option>
+                <option value="detailed">HTML (Detailed with Code)</option>
               </select>
-              <Button variant="outline" size="sm" onClick={() => exportFormat === 'pdf' ? handleExportPDF() : handleExportReport()}>
+              <Button variant="outline" size="sm" onClick={() => exportFormat === 'pdf' ? handleExportPDF() : exportFormat === 'html' ? handleExportReport() : handleExportDetailedReport()}>
                 <Download className="h-4 w-4 mr-2" />
                 Export Report
               </Button>
