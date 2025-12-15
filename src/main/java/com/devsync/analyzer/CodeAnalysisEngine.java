@@ -44,6 +44,7 @@ public class CodeAnalysisEngine {
         enabledDetectors.put("BrokenModularizationDetector", settings.getBrokenModularizationEnabled());
         enabledDetectors.put("DeficientEncapsulationDetector", settings.getDeficientEncapsulationEnabled());
         enabledDetectors.put("UnnecessaryAbstractionDetector", settings.getUnnecessaryAbstractionEnabled());
+        enabledDetectors.put("MemoryLeakDetector", settings.getMemoryLeakEnabled() != null ? settings.getMemoryLeakEnabled() : true);
         
         System.out.println("=== CodeAnalysisEngine Configuration ===");
         enabledDetectors.forEach((name, enabled) -> 
@@ -128,6 +129,7 @@ public class CodeAnalysisEngine {
         detectors.put("DeficientEncapsulationDetector", new DeficientEncapsulationDetector());
         detectors.put("LongStatementDetector", new LongStatementDetector());
         detectors.put("UnnecessaryAbstractionDetector", new UnnecessaryAbstractionDetector());
+        detectors.put("MemoryLeakDetector", new MemoryLeakDetector());
     }
     
     public Map<String, Object> analyzeProject(String projectPath) {

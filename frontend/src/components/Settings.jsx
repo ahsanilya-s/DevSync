@@ -46,6 +46,8 @@ export function Settings({ isOpen, onClose, isDarkMode }) {
     // Unnecessary Abstraction
     unnecessaryAbstractionEnabled: true,
     maxAbstractionUsage: 1,
+    // Memory Leak
+    memoryLeakEnabled: true,
     // AI Settings
     aiProvider: 'ollama',
     aiApiKey: '',
@@ -387,6 +389,12 @@ export function Settings({ isOpen, onClose, isDarkMode }) {
                   onChange={(e) => handleInputChange('deficientEncapsulationEnabled', e.target.checked)}
                   className="w-4 h-4 text-blue-600 rounded" />
                 <label htmlFor="deficientEncapsulationEnabled" className="text-sm font-medium">🟡 Deficient Encapsulation</label>
+              </div>
+              <div className="flex items-center space-x-3">
+                <input type="checkbox" id="memoryLeakEnabled" checked={settings.memoryLeakEnabled}
+                  onChange={(e) => handleInputChange('memoryLeakEnabled', e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded" />
+                <label htmlFor="memoryLeakEnabled" className="text-sm font-medium">🔴 Memory Leak Detection</label>
               </div>
             </div>
           </section>

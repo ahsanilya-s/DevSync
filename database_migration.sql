@@ -56,6 +56,10 @@ ADD COLUMN IF NOT EXISTS unnecessary_abstraction_enabled BOOLEAN DEFAULT TRUE AF
 ALTER TABLE user_settings 
 ADD COLUMN IF NOT EXISTS max_abstraction_usage INT DEFAULT 1 AFTER unnecessary_abstraction_enabled;
 
+-- Add Memory Leak Detector parameters
+ALTER TABLE user_settings 
+ADD COLUMN IF NOT EXISTS memory_leak_enabled BOOLEAN DEFAULT TRUE AFTER max_abstraction_usage;
+
 -- Verify the changes
 SELECT 
     COLUMN_NAME, 

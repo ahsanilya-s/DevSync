@@ -87,6 +87,10 @@ public class UserSettings {
     @Column(name = "max_abstraction_usage")
     private Integer maxAbstractionUsage = 1;
     
+    // 12. Memory Leak Detector
+    @Column(name = "memory_leak_enabled")
+    private Boolean memoryLeakEnabled = true;
+    
     // AI Assistant settings
     @Column(name = "ai_provider")
     private String aiProvider = "ollama"; // ollama, openai, anthropic, none
@@ -187,6 +191,10 @@ public class UserSettings {
     public void setUnnecessaryAbstractionEnabled(Boolean unnecessaryAbstractionEnabled) { this.unnecessaryAbstractionEnabled = unnecessaryAbstractionEnabled; }
     public Integer getMaxAbstractionUsage() { return maxAbstractionUsage; }
     public void setMaxAbstractionUsage(Integer maxAbstractionUsage) { this.maxAbstractionUsage = maxAbstractionUsage; }
+    
+    // Memory Leak
+    public Boolean getMemoryLeakEnabled() { return memoryLeakEnabled; }
+    public void setMemoryLeakEnabled(Boolean memoryLeakEnabled) { this.memoryLeakEnabled = memoryLeakEnabled; }
     
     public String getAiProvider() { return aiProvider; }
     public void setAiProvider(String aiProvider) { this.aiProvider = aiProvider; }
