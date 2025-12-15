@@ -1,8 +1,8 @@
 import React from "react";
-import { User, History, Settings, Plus, Github, Upload } from "lucide-react";
+import { User, History, Settings, Plus, Github, Upload, BookOpen } from "lucide-react";
 import { Button } from "./ui/button";
 
-export function Sidebar({ onNewAnalysis, onSettingsClick, onHistoryClick, onGitHubClick, onUserAccountClick, onStartAnalysis, isDarkMode, activeSection }) {
+export function Sidebar({ onNewAnalysis, onSettingsClick, onHistoryClick, onGitHubClick, onUserAccountClick, onStartAnalysis, isDarkMode, activeSection, onWelcomeGuideClick }) {
   return (
     <div className={`fixed left-0 top-0 h-screen w-64 border-r flex flex-col p-4 transition-all duration-500 ${
       isDarkMode 
@@ -32,6 +32,22 @@ export function Sidebar({ onNewAnalysis, onSettingsClick, onHistoryClick, onGitH
 
       {/* Navigation Items */}
       <nav className="flex-1 space-y-2">
+        <button
+          onClick={onWelcomeGuideClick}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${
+            activeSection === 'guide'
+              ? isDarkMode 
+                ? 'bg-gray-800 text-blue-400'
+                : 'bg-gray-100 text-blue-600'
+              : isDarkMode 
+                ? 'text-gray-300 hover:bg-gray-800 hover:text-blue-400'
+                : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'
+          }`}
+        >
+          <BookOpen className="h-5 w-5 group-hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+          <span>Welcome Guide</span>
+        </button>
+
         <button
           onClick={onStartAnalysis}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 group ${

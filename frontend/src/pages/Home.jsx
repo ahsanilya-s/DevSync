@@ -271,6 +271,7 @@ export default function Home() {
       <Sidebar
         onNewAnalysis={handleNewAnalysis}
         onStartAnalysis={handleStartAnalysis}
+        onWelcomeGuideClick={() => setActiveSection('guide')}
         onSettingsClick={() => { setSettingsOpen(true); setActiveSection('settings'); }}
         onHistoryClick={() => { setHistoryOpen(true); setActiveSection('history'); }}
         onGitHubClick={() => { setGithubOpen(true); setActiveSection('github'); }}

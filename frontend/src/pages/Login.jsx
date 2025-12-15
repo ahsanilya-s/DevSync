@@ -4,11 +4,13 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { toast } from 'sonner'
+import { Sun, Moon } from 'lucide-react'
 import './Login.css'
 
 export default function Login(){
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [isDarkMode, setIsDarkMode] = useState(false)
     const nav = useNavigate()
 
     async function handleLogin(){
@@ -26,7 +28,15 @@ export default function Login(){
     }
     
     return (
-        <div className="authContainer">
+        <div className={isDarkMode ? "authContainer" : "authContainer authContainerLight"}>
+            {/* Theme Toggle */}
+            <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="themeToggle"
+            >
+                {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </button>
+
             {/* Animated Gradient Orbs */}
             <div className="animatedOrb topLeftOrb" />
             <div className="animatedOrb bottomRightOrb" />
@@ -39,7 +49,7 @@ export default function Login(){
                     <div className="brandSection">
                         <div className="flex items-center gap-3 mb-6">
                             <img 
-                                src="/logo_for_blacktheme.png" 
+                                src={isDarkMode ? "/logo_for_blacktheme.png" : "/logo_for_whitetheme.png"} 
                                 alt="DevSync" 
                                 className="brandLogo" 
                             />

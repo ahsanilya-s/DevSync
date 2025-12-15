@@ -51,8 +51,8 @@ const About = () => {
   ]
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-950 via-purple-950 to-blue-950 text-white' : 'bg-white text-gray-900'}`}>
-      <div className="container mx-auto px-6 py-8">
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-950 via-purple-950 to-blue-950 text-white' : 'bg-gradient-to-br from-blue-50 via-white to-purple-50 text-gray-900'}`}>
+      <div className="container mx-auto px-6 py-8 max-w-7xl">
         <div className="flex justify-between items-center mb-8">
           <button
             onClick={() => navigate('/')}
@@ -77,24 +77,24 @@ const About = () => {
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold mb-6">About DevSync</h1>
           <p className={`text-xl max-w-4xl mx-auto ${
-            isDarkMode ? 'text-gray-300' : 'text-gray-900'
+            isDarkMode ? 'text-gray-300' : 'text-gray-700'
           }`}>
             DevSync is a comprehensive Java code analysis platform that helps developers write better, 
             more secure, and maintainable code through advanced AST parsing and AI-powered insights.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 mb-20 max-w-7xl mx-auto">
           <div>
             <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
             <p className={`mb-6 ${
-              isDarkMode ? 'text-gray-300' : 'text-gray-900'
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
             }`}>
               We're on a mission to revolutionize how developers approach code quality. By combining 
               advanced Abstract Syntax Tree analysis with artificial intelligence, we provide 
               developers with the tools they need to write exceptional Java code.
             </p>
-            <p className={isDarkMode ? 'text-gray-300' : 'text-gray-900'}>
+            <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>
               Our platform goes beyond simple linting to provide deep insights into code structure, 
               security vulnerabilities, performance bottlenecks, and maintainability issues. We believe 
               that every developer deserves access to enterprise-grade code analysis tools.
@@ -109,7 +109,7 @@ const About = () => {
                 <div>
                   <h3 className="font-semibold mb-1">Advanced AST Analysis</h3>
                   <p className={`text-sm ${
-                    isDarkMode ? 'text-gray-300' : 'text-gray-800'
+                    isDarkMode ? 'text-gray-300' : 'text-gray-600'
                   }`}>Deep parsing of Java source code for comprehensive analysis</p>
                 </div>
               </div>
@@ -118,7 +118,7 @@ const About = () => {
                 <div>
                   <h3 className="font-semibold mb-1">AI-Powered Insights</h3>
                   <p className={`text-sm ${
-                    isDarkMode ? 'text-gray-300' : 'text-gray-800'
+                    isDarkMode ? 'text-gray-300' : 'text-gray-600'
                   }`}>Machine learning algorithms provide intelligent recommendations</p>
                 </div>
               </div>
@@ -127,7 +127,7 @@ const About = () => {
                 <div>
                   <h3 className="font-semibold mb-1">Security Focus</h3>
                   <p className={`text-sm ${
-                    isDarkMode ? 'text-gray-300' : 'text-gray-800'
+                    isDarkMode ? 'text-gray-300' : 'text-gray-600'
                   }`}>Comprehensive vulnerability detection and prevention</p>
                 </div>
               </div>
@@ -136,7 +136,7 @@ const About = () => {
                 <div>
                   <h3 className="font-semibold mb-1">Developer Experience</h3>
                   <p className={`text-sm ${
-                    isDarkMode ? 'text-gray-300' : 'text-gray-800'
+                    isDarkMode ? 'text-gray-300' : 'text-gray-600'
                   }`}>Intuitive interface designed for modern development workflows</p>
                 </div>
               </div>
@@ -146,15 +146,15 @@ const About = () => {
 
         <div className="mb-20">
           <h2 className="text-3xl font-bold text-center mb-12">Our Values</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
             {values.map((value, index) => (
               <div key={index} className={`text-center backdrop-blur-sm border rounded-xl p-6 transition-all ${
-                isDarkMode ? 'bg-white/10 border-white/20 hover:bg-white/15' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                isDarkMode ? 'bg-white/10 border-white/20 hover:bg-white/15' : 'bg-white border-gray-200 hover:shadow-lg shadow-md'
               }`}>
                 <div className="text-blue-500 mb-4 flex justify-center">{value.icon}</div>
                 <h3 className="text-xl font-semibold mb-3">{value.title}</h3>
                 <p className={`text-sm ${
-                  isDarkMode ? 'text-gray-300' : 'text-gray-800'
+                  isDarkMode ? 'text-gray-300' : 'text-gray-600'
                 }`}>{value.description}</p>
               </div>
             ))}
@@ -163,30 +163,30 @@ const About = () => {
 
         <div className="mb-20">
           <h2 className="text-3xl font-bold text-center mb-12">Meet Our Team</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {team.map((member, index) => (
               <div key={index} className={`text-center backdrop-blur-sm border rounded-xl p-8 transition-all ${
-                isDarkMode ? 'bg-white/10 border-white/20 hover:bg-white/15' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                isDarkMode ? 'bg-white/10 border-white/20 hover:bg-white/15' : 'bg-white border-gray-200 hover:shadow-lg shadow-md'
               }`}>
                 <div className="text-6xl mb-4">{member.avatar}</div>
                 <h3 className="text-xl font-semibold mb-2">{member.name}</h3>
                 <p className="text-blue-500 mb-4">{member.role}</p>
                 <p className={`text-sm ${
-                  isDarkMode ? 'text-gray-300' : 'text-gray-800'
+                  isDarkMode ? 'text-gray-300' : 'text-gray-600'
                 }`}>{member.description}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div className={`text-center rounded-xl p-12 ${
+        <div className={`text-center rounded-xl p-12 max-w-5xl mx-auto ${
           isDarkMode 
             ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30'
-            : 'bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200'
+            : 'bg-gradient-to-r from-blue-100 to-purple-100 border border-blue-300 shadow-lg'
         }`}>
           <h2 className="text-3xl font-bold mb-6">Join the DevSync Community</h2>
           <p className={`mb-8 max-w-2xl mx-auto ${
-            isDarkMode ? 'text-gray-300' : 'text-gray-900'
+            isDarkMode ? 'text-gray-300' : 'text-gray-700'
           }`}>
             Ready to improve your Java code quality? Join thousands of developers who trust DevSync 
             for their code analysis needs.
@@ -209,9 +209,9 @@ const About = () => {
 
         {/* Footer */}
         <footer className={`mt-20 py-12 border-t ${
-          isDarkMode ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-gray-50'
+          isDarkMode ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-white'
         }`}>
-          <div className="container mx-auto px-6">
+          <div className="container mx-auto px-6 max-w-7xl">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div>
                 <h4 className="font-semibold mb-4">DevSync</h4>

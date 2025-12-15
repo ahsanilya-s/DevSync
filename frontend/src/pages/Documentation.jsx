@@ -20,14 +20,14 @@ const Documentation = () => {
       title: 'Getting Started with DevSync',
       content: (
         <div className="space-y-6">
-          <p className={isDarkMode ? 'text-gray-300' : 'text-gray-900'}>Welcome to DevSync! This guide will help you get started with analyzing your Java projects.</p>
+          <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Welcome to DevSync! This guide will help you get started with analyzing your Java projects.</p>
           
           <div className={`border rounded-lg p-6 ${
-            isDarkMode ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-gray-200'
+            isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200 shadow-md'
           }`}>
             <h3 className="text-xl font-semibold mb-4">Quick Start Steps</h3>
             <ol className={`space-y-3 list-decimal list-inside ${
-              isDarkMode ? 'text-gray-300' : 'text-gray-900'
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
             }`}>
               <li>Create your DevSync account</li>
               <li>Log in to your dashboard</li>
@@ -37,10 +37,12 @@ const Documentation = () => {
             </ol>
           </div>
 
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6">
+          <div className={`border rounded-lg p-6 ${
+            isDarkMode ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-200 shadow-md'
+          }`}>
             <h3 className="text-xl font-semibold mb-4 text-blue-500">System Requirements</h3>
             <ul className={`space-y-2 ${
-              isDarkMode ? 'text-gray-300' : 'text-gray-900'
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
             }`}>
               <li>• Java projects (Java 8 or higher)</li>
               <li>• ZIP file format for uploads</li>
@@ -55,14 +57,14 @@ const Documentation = () => {
       title: 'Uploading Your Java Projects',
       content: (
         <div className="space-y-6">
-          <p className={isDarkMode ? 'text-gray-300' : 'text-gray-900'}>Learn how to properly prepare and upload your Java projects for analysis.</p>
+          <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Learn how to properly prepare and upload your Java projects for analysis.</p>
           
           <div className={`border rounded-lg p-6 ${
-            isDarkMode ? 'bg-white/5 border-white/10' : 'bg-gray-50 border-gray-200'
+            isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200 shadow-md'
           }`}>
             <h3 className="text-xl font-semibold mb-4">Preparing Your Project</h3>
             <div className={`space-y-4 ${
-              isDarkMode ? 'text-gray-300' : 'text-gray-900'
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
             }`}>
               <p>1. <strong>Clean your project:</strong> Remove build artifacts, compiled classes, and temporary files</p>
               <p>2. <strong>Include source files:</strong> Ensure all .java files are included in your ZIP</p>
@@ -71,10 +73,12 @@ const Documentation = () => {
             </div>
           </div>
 
-          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-6">
-            <h3 className="text-xl font-semibold mb-4 text-green-500">Supported File Types</h3>
+          <div className={`border rounded-lg p-6 ${
+            isDarkMode ? 'bg-green-500/10 border-green-500/20' : 'bg-green-50 border-green-200 shadow-md'
+          }`}>
+            <h3 className="text-xl font-semibold mb-4 text-green-600">Supported File Types</h3>
             <ul className={`grid grid-cols-2 gap-2 ${
-              isDarkMode ? 'text-gray-300' : 'text-gray-900'
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
             }`}>
               <li>• .java (source files)</li>
               <li>• .properties (configuration)</li>
@@ -89,12 +93,18 @@ const Documentation = () => {
       title: 'Analysis Features Overview',
       content: (
         <div className="space-y-6">
-          <p className="text-gray-300">DevSync provides comprehensive analysis of your Java code using advanced AST parsing.</p>
+          <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>DevSync provides comprehensive analysis of your Java code using advanced AST parsing.</p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white/5 border border-white/10 rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-3 text-red-400">Code Smells</h3>
-              <ul className="space-y-2 text-gray-300 text-sm">
+            <div className={`border rounded-lg p-6 ${
+              isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200 shadow-md'
+            }`}>
+              <h3 className={`text-lg font-semibold mb-3 ${
+                isDarkMode ? 'text-red-400' : 'text-red-600'
+              }`}>Code Smells</h3>
+              <ul className={`space-y-2 text-sm ${
+                isDarkMode ? 'text-gray-300' : 'text-gray-600'
+              }`}>
                 <li>• Long methods detection</li>
                 <li>• Large parameter lists</li>
                 <li>• Duplicate code blocks</li>
@@ -102,9 +112,15 @@ const Documentation = () => {
               </ul>
             </div>
             
-            <div className="bg-white/5 border border-white/10 rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-3 text-yellow-400">Security Issues</h3>
-              <ul className="space-y-2 text-gray-300 text-sm">
+            <div className={`border rounded-lg p-6 ${
+              isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200 shadow-md'
+            }`}>
+              <h3 className={`text-lg font-semibold mb-3 ${
+                isDarkMode ? 'text-yellow-400' : 'text-yellow-600'
+              }`}>Security Issues</h3>
+              <ul className={`space-y-2 text-sm ${
+                isDarkMode ? 'text-gray-300' : 'text-gray-600'
+              }`}>
                 <li>• SQL injection vulnerabilities</li>
                 <li>• Input validation issues</li>
                 <li>• Hardcoded credentials</li>
@@ -112,9 +128,15 @@ const Documentation = () => {
               </ul>
             </div>
             
-            <div className="bg-white/5 border border-white/10 rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-3 text-blue-400">Performance</h3>
-              <ul className="space-y-2 text-gray-300 text-sm">
+            <div className={`border rounded-lg p-6 ${
+              isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200 shadow-md'
+            }`}>
+              <h3 className={`text-lg font-semibold mb-3 ${
+                isDarkMode ? 'text-blue-400' : 'text-blue-600'
+              }`}>Performance</h3>
+              <ul className={`space-y-2 text-sm ${
+                isDarkMode ? 'text-gray-300' : 'text-gray-600'
+              }`}>
                 <li>• Memory leak detection</li>
                 <li>• Inefficient algorithms</li>
                 <li>• Resource management</li>
@@ -122,9 +144,15 @@ const Documentation = () => {
               </ul>
             </div>
             
-            <div className="bg-white/5 border border-white/10 rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-3 text-purple-400">Quality Metrics</h3>
-              <ul className="space-y-2 text-gray-300 text-sm">
+            <div className={`border rounded-lg p-6 ${
+              isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200 shadow-md'
+            }`}>
+              <h3 className={`text-lg font-semibold mb-3 ${
+                isDarkMode ? 'text-purple-400' : 'text-purple-600'
+              }`}>Quality Metrics</h3>
+              <ul className={`space-y-2 text-sm ${
+                isDarkMode ? 'text-gray-300' : 'text-gray-600'
+              }`}>
                 <li>• Cyclomatic complexity</li>
                 <li>• Maintainability index</li>
                 <li>• Code coverage analysis</li>
@@ -139,37 +167,53 @@ const Documentation = () => {
       title: 'Understanding Your Reports',
       content: (
         <div className="space-y-6">
-          <p className="text-gray-300">Learn how to interpret and act on your DevSync analysis reports.</p>
+          <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Learn how to interpret and act on your DevSync analysis reports.</p>
           
-          <div className="bg-white/5 border border-white/10 rounded-lg p-6">
+          <div className={`border rounded-lg p-6 ${
+            isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200 shadow-md'
+          }`}>
             <h3 className="text-xl font-semibold mb-4">Severity Levels</h3>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-                <span className="font-semibold text-red-400">Critical:</span>
-                <span className="text-gray-300">Immediate attention required - security vulnerabilities, major bugs</span>
+                <span className={`font-semibold ${
+                  isDarkMode ? 'text-red-400' : 'text-red-600'
+                }`}>Critical:</span>
+                <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>Immediate attention required - security vulnerabilities, major bugs</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
-                <span className="font-semibold text-yellow-400">High:</span>
-                <span className="text-gray-300">Should be addressed soon - performance issues, code smells</span>
+                <span className={`font-semibold ${
+                  isDarkMode ? 'text-yellow-400' : 'text-yellow-600'
+                }`}>High:</span>
+                <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>Should be addressed soon - performance issues, code smells</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-4 h-4 bg-orange-500 rounded-full"></div>
-                <span className="font-semibold text-orange-400">Medium:</span>
-                <span className="text-gray-300">Consider improving - maintainability concerns</span>
+                <span className={`font-semibold ${
+                  isDarkMode ? 'text-orange-400' : 'text-orange-600'
+                }`}>Medium:</span>
+                <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>Consider improving - maintainability concerns</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-4 h-4 bg-gray-500 rounded-full"></div>
-                <span className="font-semibold text-gray-400">Low:</span>
-                <span className="text-gray-300">Minor improvements - style and convention issues</span>
+                <span className={`font-semibold ${
+                  isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                }`}>Low:</span>
+                <span className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>Minor improvements - style and convention issues</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6">
-            <h3 className="text-xl font-semibold mb-4 text-blue-400">Report Sections</h3>
-            <ul className="space-y-2 text-gray-300">
+          <div className={`border rounded-lg p-6 ${
+            isDarkMode ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-200 shadow-md'
+          }`}>
+            <h3 className={`text-xl font-semibold mb-4 ${
+              isDarkMode ? 'text-blue-400' : 'text-blue-600'
+            }`}>Report Sections</h3>
+            <ul className={`space-y-2 ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
+            }`}>
               <li>• <strong>Executive Summary:</strong> High-level overview of code quality</li>
               <li>• <strong>Detailed Findings:</strong> Specific issues with file locations</li>
               <li>• <strong>Recommendations:</strong> AI-powered suggestions for improvements</li>
@@ -183,11 +227,15 @@ const Documentation = () => {
       title: 'Configuration Options',
       content: (
         <div className="space-y-6">
-          <p className="text-gray-300">Customize DevSync analysis to match your project requirements and coding standards.</p>
+          <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Customize DevSync analysis to match your project requirements and coding standards.</p>
           
-          <div className="bg-white/5 border border-white/10 rounded-lg p-6">
+          <div className={`border rounded-lg p-6 ${
+            isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200 shadow-md'
+          }`}>
             <h3 className="text-xl font-semibold mb-4">Analysis Thresholds</h3>
-            <div className="space-y-4 text-gray-300">
+            <div className={`space-y-4 ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
+            }`}>
               <p><strong>Method Length:</strong> Configure maximum method length (default: 50 lines)</p>
               <p><strong>Parameter Count:</strong> Set maximum parameters per method (default: 7)</p>
               <p><strong>Cyclomatic Complexity:</strong> Define complexity thresholds (default: 10)</p>
@@ -195,10 +243,18 @@ const Documentation = () => {
             </div>
           </div>
 
-          <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-6">
-            <h3 className="text-xl font-semibold mb-4 text-purple-400">Custom Rules</h3>
-            <p className="text-gray-300 mb-4">Create custom analysis rules for your specific coding standards:</p>
-            <ul className="space-y-2 text-gray-300">
+          <div className={`border rounded-lg p-6 ${
+            isDarkMode ? 'bg-purple-500/10 border-purple-500/20' : 'bg-purple-50 border-purple-200 shadow-md'
+          }`}>
+            <h3 className={`text-xl font-semibold mb-4 ${
+              isDarkMode ? 'text-purple-400' : 'text-purple-600'
+            }`}>Custom Rules</h3>
+            <p className={`mb-4 ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
+            }`}>Create custom analysis rules for your specific coding standards:</p>
+            <ul className={`space-y-2 ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-700'
+            }`}>
               <li>• Naming conventions</li>
               <li>• Architecture patterns</li>
               <li>• Security requirements</li>
@@ -211,7 +267,7 @@ const Documentation = () => {
   }
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-950 via-purple-950 to-blue-950 text-white' : 'bg-white text-gray-900'}`}>
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-950 via-purple-950 to-blue-950 text-white' : 'bg-gradient-to-br from-blue-50 via-white to-purple-50 text-gray-900'}`}>
       <div className="container mx-auto px-8 py-8 max-w-7xl">
         <div className="flex justify-between items-center mb-8">
           <button
@@ -240,7 +296,7 @@ const Documentation = () => {
             Documentation
           </h1>
           <p className={`text-xl max-w-3xl mx-auto ${
-            isDarkMode ? 'text-gray-300' : 'text-gray-900'
+            isDarkMode ? 'text-gray-300' : 'text-gray-700'
           }`}>
             Complete guide to using DevSync for Java code analysis
           </p>
@@ -249,7 +305,7 @@ const Documentation = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-1">
             <div className={`backdrop-blur-sm border rounded-xl p-6 sticky top-8 ${
-              isDarkMode ? 'bg-white/10 border-white/20' : 'bg-gray-50 border-gray-200'
+              isDarkMode ? 'bg-white/10 border-white/20' : 'bg-white border-gray-200 shadow-md'
             }`}>
               <h3 className="text-lg font-semibold mb-4">Table of Contents</h3>
               <nav className="space-y-2">
@@ -275,7 +331,7 @@ const Documentation = () => {
 
           <div className="lg:col-span-3">
             <div className={`backdrop-blur-sm border rounded-xl p-8 ${
-              isDarkMode ? 'bg-white/10 border-white/20' : 'bg-gray-50 border-gray-200'
+              isDarkMode ? 'bg-white/10 border-white/20' : 'bg-white border-gray-200 shadow-lg'
             }`}>
               <h2 className="text-3xl font-bold mb-6">{content[activeSection].title}</h2>
               {content[activeSection].content}
@@ -285,9 +341,9 @@ const Documentation = () => {
 
         {/* Footer */}
         <footer className={`mt-20 py-12 border-t ${
-          isDarkMode ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-gray-50'
+          isDarkMode ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-white'
         }`}>
-          <div className="container mx-auto px-6">
+          <div className="container mx-auto px-6 max-w-7xl">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div>
                 <h4 className="font-semibold mb-4">DevSync</h4>

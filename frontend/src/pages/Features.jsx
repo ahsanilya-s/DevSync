@@ -46,8 +46,8 @@ const Features = () => {
   ]
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-950 via-purple-950 to-blue-950 text-white' : 'bg-white text-gray-900'}`}>
-      <div className="container mx-auto px-6 py-8">
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-950 via-purple-950 to-blue-950 text-white' : 'bg-gradient-to-br from-blue-50 via-white to-purple-50 text-gray-900'}`}>
+      <div className="container mx-auto px-6 py-8 max-w-7xl">
         <div className="flex justify-between items-center mb-8">
           <button
             onClick={() => navigate('/')}
@@ -72,26 +72,26 @@ const Features = () => {
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold mb-6">DevSync Features</h1>
           <p className={`text-xl max-w-3xl mx-auto ${
-            isDarkMode ? 'text-gray-300' : 'text-gray-900'
+            isDarkMode ? 'text-gray-300' : 'text-gray-700'
           }`}>
             Comprehensive Java code analysis tools designed to improve code quality, security, and maintainability
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {features.map((feature, index) => (
             <div key={index} className={`backdrop-blur-sm border rounded-xl p-6 transition-all duration-300 ${
-              isDarkMode ? 'bg-white/10 border-white/20 hover:bg-white/15' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+              isDarkMode ? 'bg-white/10 border-white/20 hover:bg-white/15' : 'bg-white border-gray-200 hover:shadow-lg shadow-md'
             }`}>
               <div className="text-blue-500 mb-4">{feature.icon}</div>
               <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
               <p className={`mb-4 ${
-                isDarkMode ? 'text-gray-300' : 'text-gray-900'
+                isDarkMode ? 'text-gray-300' : 'text-gray-700'
               }`}>{feature.description}</p>
               <ul className="space-y-2">
                 {feature.details.map((detail, idx) => (
                   <li key={idx} className={`text-sm flex items-center gap-2 ${
-                    isDarkMode ? 'text-gray-400' : 'text-gray-800'
+                    isDarkMode ? 'text-gray-400' : 'text-gray-600'
                   }`}>
                     <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
                     {detail}
@@ -104,9 +104,9 @@ const Features = () => {
 
         {/* Footer */}
         <footer className={`mt-20 py-12 border-t ${
-          isDarkMode ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-gray-50'
+          isDarkMode ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-white'
         }`}>
-          <div className="container mx-auto px-6">
+          <div className="container mx-auto px-6 max-w-7xl">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div>
                 <h4 className="font-semibold mb-4">DevSync</h4>

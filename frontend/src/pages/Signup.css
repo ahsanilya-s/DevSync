@@ -2,6 +2,40 @@
     min-height: 100vh;
     display: flex;
     background: linear-gradient(135deg, rgb(3, 7, 18) 0%, rgb(88, 28, 135) 50%, rgb(30, 58, 138) 100%);
+    position: relative;
+}
+
+.signupContainerLight {
+    background: linear-gradient(135deg, rgb(239, 246, 255) 0%, rgb(224, 231, 255) 50%, rgb(219, 234, 254) 100%);
+}
+
+.signupThemeToggle {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    z-index: 50;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(8px);
+}
+
+.signupContainerLight .signupThemeToggle {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: rgb(31, 41, 55);
+}
+
+.signupThemeToggle:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.signupContainerLight .signupThemeToggle:hover {
+    background-color: rgba(0, 0, 0, 0.1);
 }
 
 .signupOrb {
@@ -63,6 +97,53 @@
     z-index: 10;
 }
 
+.signupContainerLight .signupRightPanel {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-left-color: rgba(59, 130, 246, 0.2);
+}
+
+.signupContainerLight .signupLeftPanel {
+    color: rgb(31, 41, 55);
+}
+
+.signupContainerLight .signupMainTitle,
+.signupContainerLight .signupFormTitle {
+    color: rgb(31, 41, 55);
+}
+
+.signupContainerLight .signupSubtext,
+.signupContainerLight .signupFormSubtitle {
+    color: rgb(75, 85, 99);
+}
+
+.signupContainerLight .signupSocialButton {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: rgb(31, 41, 55);
+}
+
+.signupContainerLight .signupSocialButton:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.signupContainerLight .signupLabel {
+    color: rgb(75, 85, 99);
+}
+
+.signupContainerLight .signupInput {
+    background-color: rgb(249, 250, 251);
+    border-color: rgb(209, 213, 219);
+    color: rgb(31, 41, 55);
+}
+
+.signupContainerLight .signupInput::placeholder {
+    color: rgb(156, 163, 175);
+}
+
+.signupContainerLight .signupFooterText {
+    color: rgb(107, 114, 128);
+}
+
 .signupFormWrapper {
     max-width: 28rem;
     width: 100%;
@@ -76,8 +157,12 @@
     margin-bottom: 2rem;
 }
 
+.signupBrandArea .flex {
+    justify-content: center;
+}
+
 .signupLogo {
-    height: 3rem;
+    height: 2.5rem;
     width: auto;
 }
 

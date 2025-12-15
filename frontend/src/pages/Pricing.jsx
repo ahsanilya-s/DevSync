@@ -61,8 +61,8 @@ const Pricing = () => {
   ]
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-950 via-purple-950 to-blue-950 text-white' : 'bg-white text-gray-900'}`}>
-      <div className="container mx-auto px-6 py-8">
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-950 via-purple-950 to-blue-950 text-white' : 'bg-gradient-to-br from-blue-50 via-white to-purple-50 text-gray-900'}`}>
+      <div className="container mx-auto px-6 py-8 max-w-7xl">
         <div className="flex justify-between items-center mb-8">
           <button
             onClick={() => navigate('/')}
@@ -87,7 +87,7 @@ const Pricing = () => {
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold mb-6">Simple, Transparent Pricing</h1>
           <p className={`text-xl max-w-3xl mx-auto ${
-            isDarkMode ? 'text-gray-300' : 'text-gray-900'
+            isDarkMode ? 'text-gray-300' : 'text-gray-700'
           }`}>
             Choose the plan that fits your needs. All plans include our core code analysis features.
           </p>
@@ -96,9 +96,9 @@ const Pricing = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {plans.map((plan, index) => (
             <div key={index} className={`relative backdrop-blur-sm border rounded-xl p-8 transition-all duration-300 ${
-              plan.popular ? 'border-blue-500 scale-105' : isDarkMode ? 'border-white/20' : 'border-gray-200'
+              plan.popular ? 'border-blue-500 scale-105 shadow-xl' : isDarkMode ? 'border-white/20' : 'border-gray-200 shadow-md'
             } ${
-              isDarkMode ? 'bg-white/10 hover:bg-white/15' : 'bg-gray-50 hover:bg-gray-100'
+              isDarkMode ? 'bg-white/10 hover:bg-white/15' : 'bg-white hover:shadow-lg'
             }`}>
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
@@ -113,16 +113,16 @@ const Pricing = () => {
                 <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
                 <div className="mb-4">
                   <span className="text-4xl font-bold">{plan.price}</span>
-                  <span className="text-gray-400 ml-2">/{plan.period}</span>
+                  <span className={isDarkMode ? 'text-gray-400 ml-2' : 'text-gray-600 ml-2'}>/{plan.period}</span>
                 </div>
-                <p className="text-gray-300">{plan.description}</p>
+                <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>{plan.description}</p>
               </div>
 
               <ul className="space-y-4 mb-8">
                 {plan.features.map((feature, idx) => (
                   <li key={idx} className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span className={isDarkMode ? 'text-gray-300' : 'text-gray-900'}>{feature}</span>
+                    <span className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>{feature}</span>
                   </li>
                 ))}
               </ul>
@@ -142,18 +142,18 @@ const Pricing = () => {
 
         <div className="text-center mt-16">
           <p className={`mb-4 ${
-            isDarkMode ? 'text-gray-400' : 'text-gray-700'
+            isDarkMode ? 'text-gray-400' : 'text-gray-600'
           }`}>All plans include a 14-day free trial. No credit card required.</p>
           <p className={`text-sm ${
-            isDarkMode ? 'text-gray-500' : 'text-gray-800'
+            isDarkMode ? 'text-gray-500' : 'text-gray-700'
           }`}>Need a custom solution? <span className="text-blue-500 cursor-pointer hover:underline">Contact our sales team</span></p>
         </div>
 
         {/* Footer */}
         <footer className={`mt-20 py-12 border-t ${
-          isDarkMode ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-gray-50'
+          isDarkMode ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-white'
         }`}>
-          <div className="container mx-auto px-6">
+          <div className="container mx-auto px-6 max-w-7xl">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div>
                 <h4 className="font-semibold mb-4">DevSync</h4>

@@ -12,7 +12,7 @@ export function GitHubIntegration({ isOpen, onClose, isDarkMode }) {
   const [commits, setCommits] = useState([])
   const [analyzing, setAnalyzing] = useState(null)
   const [versionComparison, setVersionComparison] = useState([])
-  const [showComparison, setShowComparison] = useState(false)
+  const [activeTab, setActiveTab] = useState('commits')
 
   useEffect(() => {
     const token = localStorage.getItem('githubToken')
@@ -51,7 +51,7 @@ export function GitHubIntegration({ isOpen, onClose, isDarkMode }) {
 
   const handleRepoSelect = async (repo) => {
     setSelectedRepo(repo)
-    setShowComparison(false)
+    setActiveTab('commits')
     try {
       const response = await api.post('/github/commits', {
         token: githubToken,
@@ -88,8 +88,8 @@ export function GitHubIntegration({ isOpen, onClose, isDarkMode }) {
       })
       
       setVersionComparison(prev => [response.data, ...prev])
-      setShowComparison(true)
-      toast.success('Analysis complete! Check Quality Trends below.', { id: 'analyze' })
+      setActiveTab('trends')
+      toast.success('Analysis complete! Check Quality Trends tab.', { id: 'analyze' })
     } catch (error) {
       toast.error('Analysis failed: ' + error.message, { id: 'analyze' })
     } finally {
@@ -204,107 +204,153 @@ export function GitHubIntegration({ isOpen, onClose, isDarkMode }) {
           </div>
 
           {/* Right Panel - Commits & Analysis */}
-          <div className="flex-1 p-4 overflow-y-auto">
+          <div className="flex-1 flex flex-col">
             {selectedRepo ? (
-              <div className="space-y-4">
-                <div>
-                  <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                    {selectedRepo.name}
-                  </h3>
-                  <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Recent commits - Select to analyze
-                  </p>
+              <>
+                {/* Tab Navigation */}
+                <div className={`flex border-b ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <button
+                    onClick={() => setActiveTab('commits')}
+                    className={`px-6 py-3 font-medium transition-all ${activeTab === 'commits'
+                      ? isDarkMode ? 'border-b-2 border-blue-500 text-blue-400' : 'border-b-2 border-blue-600 text-blue-600'
+                      : isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <GitBranch className="inline h-4 w-4 mr-2" />
+                    Commits
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('trends')}
+                    className={`px-6 py-3 font-medium transition-all ${activeTab === 'trends'
+                      ? isDarkMode ? 'border-b-2 border-blue-500 text-blue-400' : 'border-b-2 border-blue-600 text-blue-600'
+                      : isDarkMode ? 'text-gray-400 hover:text-gray-200' : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <TrendingUp className="inline h-4 w-4 mr-2" />
+                    Quality Trends {versionComparison.length > 0 && `(${versionComparison.length})`}
+                  </button>
                 </div>
 
-                <div className="space-y-2">
-                  {commits.map((commit) => (
-                    <div
-                      key={commit.sha}
-                      className={`p-4 rounded-lg border ${
-                        isDarkMode ? 'bg-gray-800/50 border-gray-700 hover:bg-gray-800' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <p className={`font-medium text-sm ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
-                            {commit.commit.message.split('\n')[0]}
-                          </p>
-                          <div className="flex items-center gap-4 mt-2 text-xs">
-                            <span className={isDarkMode ? 'text-gray-500' : 'text-gray-500'}>
-                              {commit.commit.author.name}
-                            </span>
-                            <span className={`flex items-center gap-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                              <Clock className="h-3 w-3" />
-                              {new Date(commit.commit.author.date).toLocaleDateString()}
-                            </span>
+                {/* Tab Content */}
+                <div className="flex-1 p-4 overflow-y-auto">
+                  {activeTab === 'commits' ? (
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+                          {selectedRepo.name}
+                        </h3>
+                        <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          Recent commits - Select to analyze
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        {commits.map((commit) => (
+                          <div
+                            key={commit.sha}
+                            className={`p-4 rounded-lg border ${
+                              isDarkMode ? 'bg-gray-800/50 border-gray-700 hover:bg-gray-800' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <p className={`font-medium text-sm ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                                  {commit.commit.message.split('\n')[0]}
+                                </p>
+                                <div className="flex items-center gap-4 mt-2 text-xs">
+                                  <span className={isDarkMode ? 'text-gray-500' : 'text-gray-500'}>
+                                    {commit.commit.author.name}
+                                  </span>
+                                  <span className={`flex items-center gap-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                                    <Clock className="h-3 w-3" />
+                                    {new Date(commit.commit.author.date).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="ml-2"
+                                onClick={() => handleAnalyzeCommit(commit)}
+                                disabled={analyzing === commit.sha}
+                              >
+                                {analyzing === commit.sha ? 'Analyzing...' : 'Analyze'}
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="ml-2"
-                          onClick={() => handleAnalyzeCommit(commit)}
-                          disabled={analyzing === commit.sha}
-                        >
-                          {analyzing === commit.sha ? 'Analyzing...' : 'Analyze'}
-                        </Button>
+                        ))}
                       </div>
                     </div>
-                  ))}
-                </div>
-
-                {versionComparison.length > 0 && (
-                  <div className="mt-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className={`text-lg font-semibold ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-                        📊 Quality Trends ({versionComparison.length} analyses)
-                      </h4>
-                    </div>
-                    
-                    <div className={`p-4 rounded-lg border ${isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
-                      {versionComparison.map((analysis, idx) => (
-                          <div key={analysis.id} className={`flex items-center justify-between py-3 ${idx !== 0 ? 'border-t' : ''} ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                            <div className="flex-1">
-                              <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
-                                {analysis.commitMessage.split('\n')[0]}
-                              </p>
-                              <p className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                                {new Date(analysis.commitDate).toLocaleDateString()}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-4 text-xs">
-                              <span className="text-red-500">🔴 {analysis.criticalIssues}</span>
-                              <span className="text-yellow-500">🟡 {analysis.warnings}</span>
-                              <span className="text-orange-500">🟠 {analysis.suggestions}</span>
-                              <span className={`font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                Total: {analysis.totalIssues}
-                              </span>
-                              {idx > 0 && (
-                                <span className={`flex items-center gap-1 ${
-                                  analysis.totalIssues < versionComparison[idx-1].totalIssues 
-                                    ? 'text-green-500' 
-                                    : analysis.totalIssues > versionComparison[idx-1].totalIssues
-                                    ? 'text-red-500'
-                                    : 'text-gray-500'
-                                }`}>
-                                  {analysis.totalIssues < versionComparison[idx-1].totalIssues ? (
-                                    <><TrendingDown className="h-3 w-3" /> Improved</>
-                                  ) : analysis.totalIssues > versionComparison[idx-1].totalIssues ? (
-                                    <><TrendingUp className="h-3 w-3" /> Degraded</>
-                                  ) : (
-                                    'Same'
-                                  )}
-                                </span>
-                              )}
-                            </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {versionComparison.length > 0 ? (
+                        <>
+                          <div>
+                            <h3 className={`text-lg font-semibold mb-2 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
+                              📊 Quality Trends
+                            </h3>
+                            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                              {versionComparison.length} analyses for {selectedRepo.name}
+                            </p>
                           </div>
-                      ))}
+                          
+                          <div className="space-y-2">
+                            {versionComparison.map((analysis, idx) => (
+                              <div key={analysis.id} className={`p-4 rounded-lg border ${
+                                isDarkMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'
+                              }`}>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                                      {analysis.commitMessage.split('\n')[0]}
+                                    </p>
+                                    <p className={`text-xs mt-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                                      {new Date(analysis.commitDate).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-4 text-xs">
+                                    <span className="text-red-500">🔴 {analysis.criticalIssues}</span>
+                                    <span className="text-yellow-500">🟡 {analysis.warnings}</span>
+                                    <span className="text-orange-500">🟠 {analysis.suggestions}</span>
+                                    <span className={`font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                      Total: {analysis.totalIssues}
+                                    </span>
+                                    {idx > 0 && (
+                                      <span className={`flex items-center gap-1 ${
+                                        analysis.totalIssues < versionComparison[idx-1].totalIssues 
+                                          ? 'text-green-500' 
+                                          : analysis.totalIssues > versionComparison[idx-1].totalIssues
+                                          ? 'text-red-500'
+                                          : 'text-gray-500'
+                                      }`}>
+                                        {analysis.totalIssues < versionComparison[idx-1].totalIssues ? (
+                                          <><TrendingDown className="h-3 w-3" /> Improved</>
+                                        ) : analysis.totalIssues > versionComparison[idx-1].totalIssues ? (
+                                          <><TrendingUp className="h-3 w-3" /> Degraded</>
+                                        ) : (
+                                          'Same'
+                                        )}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <p className={`text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            No analyses yet. Analyze commits to see quality trends.
+                          </p>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              </>
             ) : (
-              <div className="flex items-center justify-center h-full">
+              <div className="flex items-center justify-center flex-1">
                 <p className={`text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   Select a repository to view commits
                 </p>

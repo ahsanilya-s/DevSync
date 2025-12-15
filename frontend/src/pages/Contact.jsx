@@ -28,8 +28,8 @@ const Contact = () => {
   }
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-950 via-purple-950 to-blue-950 text-white' : 'bg-white text-gray-900'}`}>
-      <div className="container mx-auto px-6 py-8">
+    <div className={`min-h-screen ${isDarkMode ? 'bg-gradient-to-br from-gray-950 via-purple-950 to-blue-950 text-white' : 'bg-gradient-to-br from-blue-50 via-white to-purple-50 text-gray-900'}`}>
+      <div className="container mx-auto px-6 py-8 max-w-7xl">
         <div className="flex justify-between items-center mb-8">
           <button
             onClick={() => navigate('/')}
@@ -54,7 +54,7 @@ const Contact = () => {
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold mb-6">Contact Us</h1>
           <p className={`text-xl max-w-3xl mx-auto ${
-            isDarkMode ? 'text-gray-300' : 'text-gray-900'
+            isDarkMode ? 'text-gray-300' : 'text-gray-700'
           }`}>
             Have questions about DevSync? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
           </p>
@@ -71,7 +71,7 @@ const Contact = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">Email</h3>
-                  <p className={isDarkMode ? 'text-gray-300' : 'text-gray-900'}>support@devsync.com</p>
+                  <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>support@devsync.com</p>
                   <p className={`text-sm ${
                     isDarkMode ? 'text-gray-400' : 'text-gray-600'
                   }`}>We'll respond within 24 hours</p>
@@ -84,7 +84,7 @@ const Contact = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">Phone</h3>
-                  <p className={isDarkMode ? 'text-gray-300' : 'text-gray-900'}>+1 (555) 123-4567</p>
+                  <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>+1 (555) 123-4567</p>
                   <p className={`text-sm ${
                     isDarkMode ? 'text-gray-400' : 'text-gray-600'
                   }`}>Mon-Fri 9AM-6PM EST</p>
@@ -97,8 +97,8 @@ const Contact = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">Office</h3>
-                  <p className={isDarkMode ? 'text-gray-300' : 'text-gray-900'}>123 Tech Street</p>
-                  <p className={isDarkMode ? 'text-gray-300' : 'text-gray-900'}>San Francisco, CA 94105</p>
+                  <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>123 Tech Street</p>
+                  <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>San Francisco, CA 94105</p>
                 </div>
               </div>
 
@@ -108,7 +108,7 @@ const Contact = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-1">Live Chat</h3>
-                  <p className={isDarkMode ? 'text-gray-300' : 'text-gray-900'}>Available on our dashboard</p>
+                  <p className={isDarkMode ? 'text-gray-300' : 'text-gray-700'}>Available on our dashboard</p>
                   <p className={`text-sm ${
                     isDarkMode ? 'text-gray-400' : 'text-gray-600'
                   }`}>For registered users</p>
@@ -116,25 +116,27 @@ const Contact = () => {
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-6">
+            <div className={`backdrop-blur-sm border rounded-xl p-6 ${
+              isDarkMode ? 'bg-white/10 border-white/20' : 'bg-white border-gray-200 shadow-md'
+            }`}>
               <h3 className="text-xl font-semibold mb-4">Frequently Asked Questions</h3>
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-semibold text-blue-400 mb-1">How long does analysis take?</h4>
+                  <h4 className="font-semibold text-blue-500 mb-1">How long does analysis take?</h4>
                   <p className={`text-sm ${
-                    isDarkMode ? 'text-gray-300' : 'text-gray-800'
+                    isDarkMode ? 'text-gray-300' : 'text-gray-600'
                   }`}>Most projects are analyzed within 2-5 minutes, depending on size and complexity.</p>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-blue-400 mb-1">What file formats are supported?</h4>
+                  <h4 className="font-semibold text-blue-500 mb-1">What file formats are supported?</h4>
                   <p className={`text-sm ${
-                    isDarkMode ? 'text-gray-300' : 'text-gray-800'
+                    isDarkMode ? 'text-gray-300' : 'text-gray-600'
                   }`}>We support ZIP files containing Java source code (.java files).</p>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-blue-400 mb-1">Is my code secure?</h4>
+                  <h4 className="font-semibold text-blue-500 mb-1">Is my code secure?</h4>
                   <p className={`text-sm ${
-                    isDarkMode ? 'text-gray-300' : 'text-gray-800'
+                    isDarkMode ? 'text-gray-300' : 'text-gray-600'
                   }`}>Yes, all uploads are encrypted and automatically deleted after analysis.</p>
                 </div>
               </div>
@@ -142,7 +144,9 @@ const Contact = () => {
           </div>
 
           <div>
-            <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-8">
+            <div className={`backdrop-blur-sm border rounded-xl p-8 ${
+              isDarkMode ? 'bg-white/10 border-white/20' : 'bg-white border-gray-200 shadow-lg'
+            }`}>
               <h2 className="text-2xl font-bold mb-6">Send us a Message</h2>
               
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -155,7 +159,9 @@ const Contact = () => {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all"
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-blue-400 transition-all ${
+                      isDarkMode ? 'bg-white/10 border-white/20 focus:bg-white/15 text-white' : 'bg-gray-50 border-gray-300 focus:bg-white text-gray-900'
+                    }`}
                     placeholder="Your full name"
                   />
                 </div>
@@ -169,7 +175,9 @@ const Contact = () => {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all"
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-blue-400 transition-all ${
+                      isDarkMode ? 'bg-white/10 border-white/20 focus:bg-white/15 text-white' : 'bg-gray-50 border-gray-300 focus:bg-white text-gray-900'
+                    }`}
                     placeholder="your.email@example.com"
                   />
                 </div>
@@ -182,7 +190,9 @@ const Contact = () => {
                     value={formData.subject}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all"
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-blue-400 transition-all ${
+                      isDarkMode ? 'bg-white/10 border-white/20 focus:bg-white/15 text-white' : 'bg-gray-50 border-gray-300 focus:bg-white text-gray-900'
+                    }`}
                   >
                     <option value="">Select a subject</option>
                     <option value="general">General Inquiry</option>
@@ -202,7 +212,9 @@ const Contact = () => {
                     onChange={handleChange}
                     required
                     rows={6}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:border-blue-400 focus:bg-white/15 transition-all resize-none"
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:border-blue-400 transition-all resize-none ${
+                      isDarkMode ? 'bg-white/10 border-white/20 focus:bg-white/15 text-white' : 'bg-gray-50 border-gray-300 focus:bg-white text-gray-900'
+                    }`}
                     placeholder="Tell us how we can help you..."
                   />
                 </div>
@@ -218,7 +230,9 @@ const Contact = () => {
             </div>
 
             <div className="mt-8 text-center">
-              <p className="text-gray-400 text-sm">
+              <p className={`text-sm ${
+                isDarkMode ? 'text-gray-400' : 'text-gray-600'
+              }`}>
                 Need immediate help? Check out our{' '}
                 <button 
                   onClick={() => navigate('/documentation')}
@@ -237,9 +251,9 @@ const Contact = () => {
 
         {/* Footer */}
         <footer className={`mt-20 py-12 border-t ${
-          isDarkMode ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-gray-50'
+          isDarkMode ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-white'
         }`}>
-          <div className="container mx-auto px-6">
+          <div className="container mx-auto px-6 max-w-7xl">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div>
                 <h4 className="font-semibold mb-4">DevSync</h4>

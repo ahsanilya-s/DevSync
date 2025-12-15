@@ -4,12 +4,14 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { toast } from 'sonner'
+import { Sun, Moon } from 'lucide-react'
 import './Signup.css'
 
 export default function Signup(){
     const [username, setUsername] = useState('')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [isDarkMode, setIsDarkMode] = useState(false)
     const nav = useNavigate()
 
     async function handleSignup(){
@@ -23,7 +25,15 @@ export default function Signup(){
     }
     
     return (
-        <div className="signupContainer">
+        <div className={isDarkMode ? "signupContainer" : "signupContainer signupContainerLight"}>
+            {/* Theme Toggle */}
+            <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="signupThemeToggle"
+            >
+                {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </button>
+
             {/* Animated Gradient Orbs */}
             <div className="signupOrb signupTopOrb" />
             <div className="signupOrb signupBottomOrb" />
@@ -36,7 +46,7 @@ export default function Signup(){
                     <div className="signupBrandArea">
                         <div className="flex items-center gap-3 mb-6">
                             <img 
-                                src="/logo_for_blacktheme.png" 
+                                src={isDarkMode ? "/logo_for_blacktheme.png" : "/logo_for_whitetheme.png"} 
                                 alt="DevSync" 
                                 className="signupLogo" 
                             />
