@@ -1,0 +1,698 @@
+\documentclass[12pt,a4paper]{article}
+
+% --------------------
+% Packages
+% --------------------
+\usepackage{mathptmx}           % Times New Roman (preferred over times)
+\usepackage{setspace}           % Line spacing
+\usepackage{geometry}           % Page margins
+\usepackage{titlesec}           % Custom section fonts
+\usepackage{enumitem}           % Better lists
+\usepackage{graphicx}           % For images
+\usepackage{float}              % For H placement specifier
+\usepackage{hyperref}           % For hyperlinks
+\usepackage{xcolor}             % For colors
+\usepackage{fancyvrb}           % Better verbatim environments
+\usepackage{booktabs}           % Better tables
+\usepackage{caption}            % Better captions
+
+% --------------------
+% Page Setup
+% --------------------
+\geometry{
+    left=1in,
+    right=1in,
+    top=1in,
+    bottom=1in
+}
+
+\setlength{\parindent}{0.5in}
+\onehalfspacing
+
+% --------------------
+% Hyperref Setup
+% --------------------
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    urlcolor=blue!70!black,
+    citecolor=blue!70!black
+}
+
+% --------------------
+% Section Formatting
+% --------------------
+\titleformat{\section}
+{\fontsize{16}{18}\selectfont\bfseries}
+{\thesection}{1em}{}
+
+\titleformat{\subsection}
+{\fontsize{14}{16}\selectfont\bfseries}
+{\thesubsection}{1em}{}
+
+\titleformat{\subsubsection}
+{\fontsize{12}{14}\selectfont\bfseries}
+{\thesubsubsection}{1em}{}
+
+\titlespacing*{\section}{0pt}{2ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+\titlespacing*{\subsection}{0pt}{1.5ex plus 1ex minus .2ex}{1ex plus .2ex}
+\titlespacing*{\subsubsection}{0pt}{1ex plus 1ex minus .2ex}{0.5ex plus .2ex}
+
+% --------------------
+% Document Start
+% --------------------
+\begin{document}
+
+% ====================
+% Title Page (Optional)
+% ====================
+    \begin{titlepage}
+        \centering
+        \vspace*{2cm}
+        {\Huge\bfseries DevSync\par}
+        \vspace{0.5cm}
+        {\Large\itshape Java Code Quality Analysis Platform\par}
+        \vspace{2cm}
+        {\large Software Design Document\par}
+        \vspace{1cm}
+        {\large Version 1.0\par}
+        \vfill
+        {\large \today\par}
+    \end{titlepage}
+
+% ====================
+% Table of Contents
+% ====================
+    \tableofcontents
+    \newpage
+
+% ====================
+    \section{Introduction}
+% ====================
+
+    DevSync is a comprehensive Java code quality analysis platform that combines advanced Abstract Syntax Tree (AST) parsing with AI-powered recommendations to detect code smells, security vulnerabilities, and maintainability issues in Java projects. The platform serves as an automated code review assistant, enabling development teams to maintain high code quality standards throughout the software development lifecycle.
+
+    \subsection{Project Scope}
+
+    The project encompasses multiple interconnected modules designed to provide end-to-end code quality assessment capabilities.
+
+    \subsubsection{Completed Modules}
+
+    \begin{description}[style=nextline, leftmargin=0.5in]
+        \item[User Authentication System]
+        Secure user registration, login, and session management with BCrypt password encryption, ensuring data protection and user privacy compliance.
+
+        \item[File Upload and Processing]
+        ZIP file upload, extraction, and Java file collection capabilities with support for project structures up to 50MB in size.
+
+        \item[Advanced Code Analysis Engine]
+        Seven sophisticated detectors implementing complex algorithms for comprehensive code smell detection, including cyclomatic complexity analysis and duplicate code identification.
+
+        \item[AI Integration Module]
+        Ollama AI service integration with fallback mechanisms for intelligent code recommendations when external services are unavailable.
+
+        \item[Report Generation System]
+        Comprehensive text-based reporting with severity categorization (Critical, Warning, Suggestion) and visual diagram generation.
+
+        \item[Analysis History Tracking]
+        Persistent storage and retrieval of analysis sessions and results, enabling trend analysis and code quality improvement tracking.
+
+        \item[Web-based Dashboard]
+        Modern React.js frontend with dark/light theme support and responsive design for optimal user experience across devices.
+
+        \item[Admin Panel]
+        Administrative interface for user management, system monitoring, and configuration control.
+    \end{description}
+
+    \subsubsection{Key Features Implemented}
+
+    The platform incorporates several advanced features that distinguish it from conventional static analysis tools:
+
+    \begin{description}[style=nextline, leftmargin=0.5in]
+        \item[Multi-dimensional Code Quality Assessment]
+        Utilizes both cyclomatic and cognitive complexity metrics to provide nuanced code quality evaluation beyond simple line counts.
+
+        \item[Real-time AST Parsing]
+        Integration with JavaParser enables immediate Abstract Syntax Tree generation and analysis upon file upload.
+
+        \item[Severity-based Issue Classification]
+        Three-tier classification system (Critical, Warning, Suggestion) prioritizes issues based on their impact on code quality and maintainability.
+
+        \item[Historical Analysis Tracking]
+        Comparison capabilities allow developers to track code quality improvements over time and identify regression patterns.
+
+        \item[AI-enhanced Recommendations]
+        Contextual suggestions powered by AI provide actionable guidance for addressing identified issues.
+
+        \item[Secure File Handling]
+        Access control mechanisms ensure that uploaded code remains protected and accessible only to authorized users.
+    \end{description}
+
+% ===================================================
+    \section{Design Methodology and Software Process Model}
+% ===================================================
+
+    \subsection{Design Methodology: Object-Oriented Programming}
+
+    The DevSync project follows Object-Oriented Programming (OOP) principles, providing a robust foundation for building maintainable and extensible software. This methodology was selected based on the following justifications:
+
+    \subsubsection{Encapsulation}
+
+    Each detector class, such as \texttt{LongMethodDetector} and \texttt{CodeDuplicationDetector}, encapsulates specific analysis logic and maintains internal state through private methods and fields. This design principle ensures data integrity by preventing unauthorized access to internal implementation details while providing clear, well-defined interfaces for module interaction. For example, the complexity calculation algorithms remain hidden within detector classes, exposing only the final analysis results through public methods.
+
+    \subsubsection{Inheritance}
+
+    The project utilizes inheritance through Spring Boot's component hierarchy and JPA entity relationships. All detectors share common analysis patterns inherited from base classes while extending functionality for specific detection scenarios. This hierarchical structure reduces code duplication and ensures consistent behavior across the detector family.
+
+    \subsubsection{Polymorphism}
+
+    The detector system demonstrates polymorphism where different detector implementations are processed uniformly through common interfaces. This enables flexible execution of the analysis pipeline, allowing new detectors to be added without modifying existing orchestration logic. The runtime binding of detector implementations supports extensibility and testing through mock implementations.
+
+    \subsubsection{Abstraction}
+
+    Complex analysis algorithms are abstracted into high-level interfaces, hiding implementation details while providing clear contracts for functionality. Users of the analysis engine interact with simplified APIs without needing to understand the underlying AST traversal algorithms or metric calculation formulas.
+
+    \subsection{Software Process Model: Iterative and Incremental Development}
+
+    The project follows an Iterative and Incremental Development model, chosen for its flexibility and risk mitigation capabilities in complex software projects.
+
+    \subsubsection{Iterative Approach}
+
+    The system was developed through multiple iterations, with each iteration focusing on specific functionality:
+
+    \begin{enumerate}[leftmargin=0.7in]
+        \item \textbf{Iteration 1:} Core authentication and user management
+        \item \textbf{Iteration 2:} File processing and extraction pipeline
+        \item \textbf{Iteration 3:} Basic code analysis with initial detectors
+        \item \textbf{Iteration 4:} Report generation and visualization
+        \item \textbf{Iteration 5:} AI integration and advanced recommendations
+        \item \textbf{Iteration 6:} Admin panel and system monitoring
+    \end{enumerate}
+
+    This approach allowed continuous refinement and improvement of existing features based on feedback from each iteration.
+
+    \subsubsection{Incremental Delivery}
+
+    Features were delivered incrementally, starting with core functionality and progressively adding advanced capabilities. This enabled early testing and validation, ensuring that foundational components were stable before building dependent features.
+
+    \subsubsection{Risk Mitigation}
+
+    The iterative approach allowed early identification and resolution of technical challenges, particularly in AST parsing complexity and AI service integration. Prototyping during early iterations exposed potential issues before significant development investment.
+
+    \subsubsection{Flexibility}
+
+    The incremental model provided flexibility to adapt requirements based on testing feedback and emerging needs. Fallback mechanisms for AI service unavailability were added in response to reliability concerns identified during integration testing.
+
+% ====================
+    \section{System Overview}
+% ====================
+
+    DevSync is an intelligent Java code analysis platform designed to improve software quality through automated detection of code smells, security vulnerabilities, and maintainability issues. The system combines traditional static analysis techniques with modern AI-powered insights to provide comprehensive code quality assessment.
+
+    \subsection{Functionality Context}
+
+    The platform analyzes uploaded Java project files and generates detailed reports containing actionable recommendations. Users can track code quality improvements over time through historical analysis comparison and receive AI-generated suggestions for code enhancement. The workflow supports individual developers performing personal code reviews as well as team leads monitoring project-wide code quality metrics.
+
+    \subsection{Design Context}
+
+    The system architecture follows a client-server model where a React.js frontend communicates with a Spring Boot backend through RESTful APIs. The backend integrates multiple analysis engines and external AI services, providing a unified interface for code quality assessment regardless of the underlying analysis mechanism.
+
+    \subsection{Background Information}
+
+    Modern software development faces increasing complexity in maintaining code quality across large codebases. Manual code reviews are time-consuming and may miss subtle issues that automated tools can detect consistently. DevSync addresses this challenge by automating code analysis using advanced algorithms and AI-driven recommendations, reducing the burden on human reviewers while improving detection coverage.
+
+% ===========================
+    \subsection{Architectural Design}
+% ===========================
+
+    \subsubsection{Modular Program Structure}
+
+    The DevSync system is decomposed into four major modules, each responsible for distinct aspects of the platform's functionality.
+
+    \paragraph{Frontend Module (React.js)}
+
+    The presentation layer consists of React components organized by functionality:
+
+    \begin{description}[style=nextline, leftmargin=0.5in]
+        \item[Authentication Components] Handle user login, registration, and session management with secure token storage.
+
+        \item[Dashboard Components] Display analysis results, historical trends, and quick-access functionality.
+
+        \item[Reusable UI Components] Provide consistent styling with theme support (dark/light modes) and accessibility features.
+
+        \item[API Integration Layer] Manages all backend communication using Axios with request interceptors and error handling.
+    \end{description}
+
+    \paragraph{Backend Module (Spring Boot)}
+
+    The application layer implements business logic through a layered architecture:
+
+    \begin{description}[style=nextline, leftmargin=0.5in]
+        \item[Controller Layer] REST endpoints handling HTTP requests with validation and response formatting.
+
+        \item[Service Layer] Business logic implementation with transaction management and cross-cutting concerns.
+
+        \item[Repository Layer] Data access abstraction using Spring Data JPA with custom query methods.
+
+        \item[Analysis Engine] Orchestrates detector execution and result aggregation.
+    \end{description}
+
+    \paragraph{Analysis Engine Module}
+
+    The core processing component responsible for code quality assessment:
+
+    \begin{description}[style=nextline, leftmargin=0.5in]
+        \item[AST Parser] JavaParser integration for source code parsing and syntax tree generation.
+
+        \item[Detector Components] Specialized analyzers for different code smell categories.
+
+        \item[Report Generator] Formats analysis results into human-readable reports with visual diagrams.
+
+        \item[AI Integration] Ollama service connection with graceful degradation for service unavailability.
+    \end{description}
+
+    \paragraph{Data Management Module}
+
+    Persistence and storage management:
+
+    \begin{description}[style=nextline, leftmargin=0.5in]
+        \item[User Management] Account data, preferences, and access control.
+
+        \item[Analysis History] Tracking of past analyses with comparison capabilities.
+
+        \item[File Management] Secure storage and retrieval of uploaded projects and generated reports.
+    \end{description}
+
+    \subsubsection{Module Relationships and Collaboration}
+
+    The system modules collaborate through well-defined interfaces to provide comprehensive code analysis functionality. The frontend communicates with the backend through RESTful APIs for authentication, file uploads, and result retrieval. Controllers delegate business logic to services, which interact with repositories for data persistence. The analysis engine coordinates detector execution, report generation, and AI service communication with fallback mechanisms.
+
+    Data flows unidirectionally from user input through processing layers to storage, with query paths returning results through the same layered structure. This separation ensures that changes to one layer do not cascade unnecessarily to others.
+
+    \textit{Note: The detailed box-and-line diagram is provided in Appendix A.}
+
+    \subsubsection{Detailed Architecture Mapping}
+
+    The system implements a four-tier architecture with clear responsibility boundaries:
+
+    \paragraph{Client Tier (Presentation Layer)}
+
+    \begin{description}[style=nextline, leftmargin=0.5in]
+        \item[React Components] Functional components with hooks for state and lifecycle management.
+        \item[State Management] Context API for global state with local component state for UI interactions.
+        \item[API Client] Centralized Axios instance with interceptors for authentication and error handling.
+        \item[Theme System] CSS-in-JS theming with dark/light mode persistence.
+    \end{description}
+
+    \paragraph{Server Tier (Application Layer)}
+
+    \begin{description}[style=nextline, leftmargin=0.5in]
+        \item[Web Layer] Spring MVC controllers with request validation and response serialization.
+        \item[Business Layer] Service classes implementing domain logic with transactional boundaries.
+        \item[Integration Layer] External service connectors for AI and potential future integrations.
+        \item[Security Layer] Spring Security configuration with JWT-based authentication.
+    \end{description}
+
+    \paragraph{Data Tier (Persistence Layer)}
+
+    \begin{description}[style=nextline, leftmargin=0.5in]
+        \item[Repository Layer] JPA repositories with custom queries for complex data retrieval.
+        \item[Entity Layer] Domain entities with JPA annotations and validation constraints.
+        \item[Database Layer] MySQL database with optimized schema design.
+        \item[File Storage] File system storage for uploaded projects and generated reports.
+    \end{description}
+
+    \paragraph{Analysis Tier (Processing Layer)}
+
+    \begin{description}[style=nextline, leftmargin=0.5in]
+        \item[Parser Layer] JavaParser integration for AST generation from source files.
+        \item[Detection Layer] Individual detector implementations for specific code smells.
+        \item[Analysis Layer] Orchestration of detector execution and result aggregation.
+        \item[Reporting Layer] Report formatting and diagram generation.
+    \end{description}
+
+    This layered architecture ensures separation of concerns, maintainability, and scalability while providing clear interfaces between system components.
+
+% ====================
+    \section{Design Models}
+% ====================
+
+    This section presents the user interface designs for both administrative and end-user application screens. All interfaces follow consistent design principles including responsive layouts, accessibility compliance, and theme support.
+
+    \subsection{Admin Module Screens}
+
+    The administrative interface provides system management capabilities for platform administrators.
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{adashboard.png}
+        \caption{Admin Dashboard---Main control panel providing an overview of system metrics, recent activities, and quick access to administrative functions.}
+        \label{fig:admin-dashboard}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{adProjects.png}
+        \caption{Admin Projects---Project management interface displaying all uploaded projects with filtering, sorting, and bulk action capabilities.}
+        \label{fig:admin-projects}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{adReports.png}
+        \caption{Admin Reports---Analytics and reporting screen showing aggregated code quality metrics across all projects and users.}
+        \label{fig:admin-reports}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{ad-Setting.png}
+        \caption{Admin Settings---System configuration options including analysis thresholds, AI service settings, and security policies.}
+        \label{fig:admin-settings}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{aduser.png}
+        \caption{Admin User Profile---Individual user profile view with account details, activity history, and administrative actions.}
+        \label{fig:admin-user}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{adUsers.png}
+        \caption{Admin Users---User list and management panel with search, filtering, and role assignment capabilities.}
+        \label{fig:admin-users}
+    \end{figure}
+
+    \subsection{Application Screens}
+
+    The end-user interface provides code analysis and reporting functionality for developers.
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{aGithubHistory.png}
+        \caption{GitHub History---Version control activity log showing commit analysis results and code quality trends over repository history.}
+        \label{fig:github-history}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{aLandingPage.png}
+        \caption{Landing Page---Initial application interface presenting platform features, benefits, and call-to-action elements.}
+        \label{fig:landing-page}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{aRegistrationPage.png}
+        \caption{Registration Page---User account creation form with validation feedback and terms acceptance.}
+        \label{fig:registration-page}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{aSetting.png}
+        \caption{User Settings---Personal configuration screen for notification preferences, theme selection, and account management.}
+        \label{fig:user-settings}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{aUploadArea.png}
+        \caption{Upload Area---File upload interface with drag-and-drop support, progress indication, and file validation feedback.}
+        \label{fig:upload-area}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{aUserAccount.png}
+        \caption{User Account---Profile and account details page showing usage statistics and subscription information.}
+        \label{fig:user-account}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\textwidth]{aWelcomeHomePage.png}
+        \caption{Welcome Home Page---User dashboard after login displaying recent analyses, quick actions, and personalized recommendations.}
+        \label{fig:welcome-home}
+    \end{figure}
+
+% ====================
+    \section{Data Design}
+% ====================
+
+    \subsection{Overview}
+
+    DevSync is a code quality analysis system that transforms uploaded Java projects into structured analysis reports. The system processes source code files, detects code smells using twelve specialized detectors, and stores analysis results in a relational database while maintaining file-based report storage. This hybrid approach balances query performance with storage efficiency for large report files.
+
+    \subsection{Data Architecture}
+
+    \subsubsection{High-Level Data Flow}
+
+    The data transformation pipeline processes user uploads through multiple stages, each refining the data representation:
+
+    \begin{Verbatim}[frame=single, fontsize=\small]
+User Upload (ZIP/JAR)
+        |
+        v
+File Extraction & Validation
+        |
+        v
+Java Source Code Parsing (JavaParser AST)
+        |
+        v
+Code Analysis Engine (12 Detectors)
+        |
+        v
+Issue Detection & Scoring
+        |
+        v
+Report Generation (TXT/Visual)
+        |
+        v
+Database Persistence + File Storage
+        |
+        v
+Frontend Presentation (React)
+    \end{Verbatim}
+
+    \subsubsection{System Layers}
+
+    The data architecture spans five distinct layers, each with specific responsibilities:
+
+    \begin{enumerate}[leftmargin=0.7in]
+        \item \textbf{Presentation Layer:} React frontend with REST API communication handles user interaction and data visualization.
+
+        \item \textbf{Application Layer:} Spring Boot controllers and services manage request routing and business orchestration.
+
+        \item \textbf{Business Logic Layer:} Code analysis engine and detectors implement the core analysis algorithms.
+
+        \item \textbf{Data Access Layer:} JPA repositories provide abstracted database operations with transaction management.
+
+        \item \textbf{Persistence Layer:} MySQL database and file system storage maintain durable data records.
+    \end{enumerate}
+
+    \subsection{Data Transformation and Processing}
+
+    \subsubsection{Input Data Transformation}
+
+    The system processes input data through six sequential stages, each transforming the data into increasingly refined representations.
+
+    \paragraph{Stage 1: File Upload Processing}
+
+    \textbf{Input:} Multipart file (ZIP/JAR format, maximum 50MB)
+
+    \textbf{Process:}
+    \begin{itemize}[leftmargin=0.5in]
+        \item Extract compressed files to a temporary directory
+        \item Generate a unique folder name using timestamp and UUID
+        \item Validate project file structure for expected Java project layout
+        \item Verify file integrity and scan for malformed archives
+    \end{itemize}
+
+    \textbf{Output:} Extracted project directory structure with validated contents
+
+    \paragraph{Stage 2: Source Code Parsing}
+
+    \textbf{Input:} Java source files (.java extension)
+
+    \textbf{Process:}
+    \begin{itemize}[leftmargin=0.5in]
+        \item JavaParser generates Abstract Syntax Tree (AST) for each source file
+        \item CompilationUnit objects created containing parsed syntax structure
+        \item AST nodes extracted including classes, methods, fields, and statements
+        \item Symbol resolution performed for type reference analysis
+    \end{itemize}
+
+    \textbf{Output:} Structured CompilationUnit objects representing source code
+
+    \paragraph{Stage 3: Code Analysis}
+
+    \textbf{Input:} CompilationUnit AST objects
+
+    \textbf{Process:}
+    \begin{itemize}[leftmargin=0.5in]
+        \item Twelve detector instances analyze AST in parallel where possible
+        \item Detector-specific algorithms traverse relevant AST nodes
+        \item Metrics calculated including LOC, complexity, cohesion, and coupling
+        \item Threshold comparison identifies violations and generates issues
+    \end{itemize}
+
+    \textbf{Output:} Collection of CodeIssue objects with location and severity
+
+    \paragraph{Stage 4: Issue Aggregation}
+
+    \textbf{Input:} Raw issue strings from detector components
+
+    \textbf{Process:}
+    \begin{itemize}[leftmargin=0.5in]
+        \item Parse issue format: \texttt{[Severity] [Type] File:Line - Message}
+        \item Extract structured fields into typed objects
+        \item Calculate severity distribution counts
+        \item Compute grading metrics based on issue weights
+    \end{itemize}
+
+    \textbf{Output:} Structured analysis results map with aggregated statistics
+
+    \paragraph{Stage 5: Report Generation}
+
+    \textbf{Input:} Analysis results map with issue data
+
+    \textbf{Process:}
+    \begin{itemize}[leftmargin=0.5in]
+        \item Format issues into human-readable text with contextual information
+        \item Generate PlantUML class and sequence diagrams
+        \item Calculate summary statistics and overall quality grades
+        \item Create comprehensive report with executive summary
+    \end{itemize}
+
+    \textbf{Output:} Text report file and visual diagram images
+
+    \paragraph{Stage 6: Data Persistence}
+
+    \textbf{Input:} Analysis results and associated metadata
+
+    \textbf{Process:}
+    \begin{itemize}[leftmargin=0.5in]
+        \item Map results to JPA entity objects
+        \item Validate constraints and referential integrity
+        \item Execute database transactions with rollback support
+        \item Store report files to designated file system location
+    \end{itemize}
+
+    \textbf{Output:} Persisted database records and stored report files
+
+    \subsubsection{Data Processing Algorithms}
+
+    The analysis engine employs several key algorithms for code quality assessment:
+
+    \paragraph{Cohesion Index Calculation}
+
+    \begin{Verbatim}[frame=single, fontsize=\small]
+cohesionIndex = usedFields / totalFields
+    \end{Verbatim}
+
+    This metric measures how comprehensively methods utilize class fields. Values range from 0.0 (low cohesion, indicating potential god class) to 1.0 (high cohesion, indicating focused responsibility). The system flags classes with cohesion index below 0.4 as exhibiting broken modularization.
+
+    \paragraph{Coupling Count Calculation}
+
+    \begin{Verbatim}[frame=single, fontsize=\small]
+couplingCount = count(unique external dependencies)
+    \end{Verbatim}
+
+    This metric counts distinct external class references within a class. High coupling (values greater than 6) indicates excessive dependencies that reduce maintainability and increase change impact.
+
+    \paragraph{Cyclomatic Complexity}
+
+    \begin{Verbatim}[frame=single, fontsize=\small]
+complexity = 1 + count(decision_points)
+    \end{Verbatim}
+
+    Cyclomatic complexity measures the number of independent execution paths through a method. Decision points include if statements, loops, case labels, and boolean operators. Methods with complexity above 10 are flagged as requiring refactoring.
+
+    \paragraph{Cognitive Complexity}
+
+    \begin{Verbatim}[frame=single, fontsize=\small]
+cognitiveComplexity = sum(nesting_penalties) + sum(structural_penalties)
+    \end{Verbatim}
+
+    Cognitive complexity measures human comprehension difficulty, accounting for nesting depth and control flow breaks. Unlike cyclomatic complexity, it penalizes deeply nested structures more heavily. Values above 15 indicate hard-to-understand code requiring simplification.
+
+    \paragraph{Issue Density}
+
+    \begin{Verbatim}[frame=single, fontsize=\small]
+issueDensity = totalIssues / (totalLOC / 1000)
+    \end{Verbatim}
+
+    Issue density normalizes the issue count per thousand lines of code, enabling fair comparison across projects of different sizes.
+
+    \paragraph{Grading Algorithm}
+
+    \begin{Verbatim}[frame=single, fontsize=\small]
+score = 100 - (critical * 10 + warning * 5 + suggestion * 2)
+    \end{Verbatim}
+
+    The grading system assigns letter grades based on weighted issue counts:
+
+    \begin{itemize}[leftmargin=0.5in]
+        \item \textbf{A+ (95--100):} Excellent code quality with minimal issues
+        \item \textbf{A (90--94):} Very good quality with few minor issues
+        \item \textbf{B (80--89):} Good quality with some improvement areas
+        \item \textbf{C (70--79):} Acceptable quality requiring attention
+        \item \textbf{D (60--69):} Below average quality with significant issues
+        \item \textbf{F (below 60):} Poor quality requiring major refactoring
+    \end{itemize}
+
+    \subsection{Data Storage}
+
+    \subsubsection{Database Storage (MySQL)}
+
+    The system uses MySQL as the primary relational database with the following configuration:
+
+    \textbf{Database Name:} \texttt{devsyncdb}
+
+    The database stores persistent system data including users, settings, and analysis history. Core tables include:
+
+    \begin{description}[style=nextline, leftmargin=0.5in]
+        \item[users] User account information including credentials and profile data
+        \item[user\_settings] Per-user configuration preferences and notification settings
+        \item[analysis\_history] Records of all analysis sessions with summary metrics
+        \item[commit\_analysis] Git commit-level analysis results for repository tracking
+        \item[admin\_settings] System-wide configuration parameters
+    \end{description}
+
+    \subsubsection{File System Storage}
+
+    Report files and uploaded projects are stored in a structured file system hierarchy:
+
+    \textbf{Base Directory:} \texttt{uploads/}
+
+    \begin{Verbatim}[frame=single, fontsize=\small]
+uploads/
+  +-- {timestamp}/
+  |     +-- {project_name}/
+  |     +-- report.txt
+  |     +-- diagrams/
+  |           +-- class_diagram.png
+  |           +-- sequence_diagram.png
+    \end{Verbatim}
+
+    Files are organized using timestamp-based unique folders to prevent naming collisions. Report file paths are stored in the database and served through backend controllers with appropriate access control.
+
+    \subsubsection{In-Memory Processing}
+
+    During analysis, temporary data structures are utilized for processing efficiency:
+
+    \begin{itemize}[leftmargin=0.5in]
+        \item Analysis results map (cleared after report generation to free memory)
+        \item Singleton detector instances (reused across analyses for efficiency)
+        \item AST objects retained only during the analysis lifecycle
+        \item Caching of frequently accessed configuration values
+    \end{itemize}
+
+    \subsection{Summary}
+
+    The DevSync data design implements a robust and scalable architecture that transforms uploaded source code into structured AST representations, processes them through twelve configurable detectors, and stores results using a hybrid database and file-based approach. The design supports extensibility through modular detector architecture, efficient processing through parallel analysis where applicable, and long-term analysis tracking through persistent storage. The separation of transactional data (database) from large artifacts (file system) optimizes both query performance and storage efficiency while maintaining system maintainability.
+
+\end{document}
