@@ -32,7 +32,7 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/upload")
 @CrossOrigin(origins = "*")
-public class UploadController {
+public class CodeAnalysisController {
 
     @Autowired
     private AIAssistantService aiAssistantService;
