@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X, AlertTriangle, CheckCircle, TrendingUp, FileText, Code, Bug, Download, Filter, Search, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from './ui/button'
 import jsPDF from 'jspdf'
 import api from '../api'
+import Chart from 'chart.js/auto'
 
 export function EnhancedVisualReport({ reportContent, isOpen, onClose, isDarkMode, projectName, projectPath }) {
   const [reportData, setReportData] = useState(null)
@@ -12,18 +13,33 @@ export function EnhancedVisualReport({ reportContent, isOpen, onClose, isDarkMod
   const [searchTerm, setSearchTerm] = useState('')
   const [expandedSections, setExpandedSections] = useState({
     overview: true,
+    charts: true,
     severity: true,
     files: true,
     issues: true
   })
   const [exportFormat, setExportFormat] = useState('pdf')
   const navigate = useNavigate()
+  const codeDistChartRef = useRef(null)
+  const smellTypesChartRef = useRef(null)
+  const severityChartRef = useRef(null)
+  const chartInstances = useRef({})
 
   useEffect(() => {
     if (reportContent && isOpen) {
       parseReportContent(reportContent)
     }
+    return () => {
+      Object.values(chartInstances.current).forEach(chart => chart?.destroy())
+      chartInstances.current = {}
+    }
   }, [reportContent, isOpen])
+  
+  useEffect(() => {
+    if (reportData && isOpen && expandedSections.charts) {
+      setTimeout(() => renderCharts(), 100)
+    }
+  }, [reportData, isOpen, expandedSections.charts, isDarkMode])
 
   const parseReportContent = (content) => {
     try {
@@ -347,6 +363,76 @@ export function EnhancedVisualReport({ reportContent, isOpen, onClose, isDarkMod
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
+  }
+  
+  const renderCharts = () => {
+    if (!reportData) return
+    
+    Object.values(chartInstances.current).forEach(chart => chart?.destroy())
+    
+    const cleanFiles = Math.max(0, reportData.totalFiles - Object.keys(reportData.fileStats).length)
+    const filesWithSmells = Object.keys(reportData.fileStats).length
+    
+    if (codeDistChartRef.current) {
+      chartInstances.current.codeDist = new Chart(codeDistChartRef.current, {
+        type: 'pie',
+        data: {
+          labels: ['Clean Files', 'Files with Smells'],
+          datasets: [{
+            data: [cleanFiles, filesWithSmells],
+            backgroundColor: ['#10b981', '#ef4444']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } }
+        }
+      })
+    }
+    
+    if (smellTypesChartRef.current && Object.keys(reportData.typeStats).length > 0) {
+      chartInstances.current.smellTypes = new Chart(smellTypesChartRef.current, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(reportData.typeStats),
+          datasets: [{
+            label: 'Count',
+            data: Object.values(reportData.typeStats),
+            backgroundColor: '#3b82f6'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      })
+    }
+    
+    if (severityChartRef.current) {
+      chartInstances.current.severity = new Chart(severityChartRef.current, {
+        type: 'doughnut',
+        data: {
+          labels: ['Critical', 'High', 'Medium', 'Low'],
+          datasets: [{
+            data: [
+              reportData.severityStats.critical,
+              reportData.severityStats.high,
+              reportData.severityStats.medium,
+              reportData.severityStats.low
+            ],
+            backgroundColor: ['#ef4444', '#eab308', '#f97316', '#3b82f6']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } }
+        }
+      })
+    }
   }
 
   const filteredIssues = reportData?.issues ? reportData.issues.filter(issue => {
@@ -1056,6 +1142,46 @@ export function EnhancedVisualReport({ reportContent, isOpen, onClose, isDarkMod
                     <div className="text-center">
                       <div className="text-2xl font-bold text-pink-600">{reportData.avgMethodsPerClass > 0 ? reportData.avgMethodsPerClass.toFixed(1) : '0'}</div>
                       <div className="text-xs opacity-75">Avg Methods/Class</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Charts Section - NEW */}
+          <div className={`mb-6 rounded-lg border ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+            <button
+              onClick={() => toggleSection('charts')}
+              className={`w-full flex items-center justify-between p-4 ${
+                isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-50'
+              }`}
+            >
+              <h3 className="text-lg font-semibold">📊 Visual Charts</h3>
+              {expandedSections.charts ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+            </button>
+            
+            {expandedSections.charts && (
+              <div className="p-4 pt-0">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                    <h4 className="font-semibold mb-3 text-center">Code Distribution</h4>
+                    <div style={{ height: '250px' }}>
+                      <canvas ref={codeDistChartRef}></canvas>
+                    </div>
+                  </div>
+                  
+                  <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                    <h4 className="font-semibold mb-3 text-center">Smell Types</h4>
+                    <div style={{ height: '250px' }}>
+                      <canvas ref={smellTypesChartRef}></canvas>
+                    </div>
+                  </div>
+                  
+                  <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                    <h4 className="font-semibold mb-3 text-center">Severity Distribution</h4>
+                    <div style={{ height: '250px' }}>
+                      <canvas ref={severityChartRef}></canvas>
                     </div>
                   </div>
                 </div>

@@ -49,6 +49,15 @@ public class ReportGenerator {
         int totalLOC = (Integer) analysisResults.getOrDefault("totalLOC", 0);
         GradeResult gradeResult = GradingSystem.calculateGrade(severityCounts, totalLOC);
         
+        // Calculate file statistics
+        int totalFiles = (Integer) analysisResults.getOrDefault("totalFiles", 0);
+        Set<String> filesWithSmells = new HashSet<>();
+        for (String issue : deduplicatedIssues) {
+            String fileName = extractFileName(issue);
+            if (fileName != null) filesWithSmells.add(fileName);
+        }
+        int cleanFiles = totalFiles - filesWithSmells.size();
+        
         // Add grading report
         report.append(GradingSystem.generateGradingReport(gradeResult));
         report.append("\n");
@@ -57,7 +66,6 @@ public class ReportGenerator {
         report.append("SUMMARY\n");
         report.append("-------\n");
         int totalIssues = deduplicatedIssues.size();
-        int totalFiles = (Integer) analysisResults.getOrDefault("totalFiles", 0);
         report.append(String.format("Analyzed %d files, found %d issues (%d critical, %d high, %d medium, %d low)\n",
             totalFiles,
             totalIssues,
@@ -65,6 +73,8 @@ public class ReportGenerator {
             severityCounts.getOrDefault("High", 0),
             severityCounts.getOrDefault("Medium", 0),
             severityCounts.getOrDefault("Low", 0)));
+        report.append(String.format("Clean Files: %d (%.1f%%)\n", cleanFiles, totalFiles > 0 ? (cleanFiles * 100.0 / totalFiles) : 0));
+        report.append(String.format("Files with Smells: %d (%.1f%%)\n", filesWithSmells.size(), totalFiles > 0 ? (filesWithSmells.size() * 100.0 / totalFiles) : 0));
         report.append(String.format("Lines of Code: %,d\n", totalLOC));
         report.append(String.format("Issue Density: %.2f issues per KLOC\n\n", gradeResult.getIssueDensity()));
         
@@ -268,6 +278,18 @@ public class ReportGenerator {
         }
         
         return fileBreakdown;
+    }
+    
+    private String extractFileName(String issue) {
+        if (issue.contains("] ") && issue.contains(":")) {
+            String afterBracket = issue.substring(issue.indexOf("] ") + 2);
+            if (afterBracket.contains(":")) {
+                String fullPath = afterBracket.substring(0, afterBracket.indexOf(":"));
+                String fileName = fullPath.contains("/") ? fullPath.substring(fullPath.lastIndexOf("/") + 1) : fullPath;
+                return fileName.contains("\\") ? fileName.substring(fileName.lastIndexOf("\\") + 1) : fileName;
+            }
+        }
+        return null;
     }
 
     public static void appendAIAnalysis(String reportPath, String aiAnalysis) throws IOException {

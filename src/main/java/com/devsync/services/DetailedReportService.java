@@ -13,6 +13,9 @@ public class DetailedReportService {
 
     @Autowired
     private HighlightMapperService highlightMapperService;
+    
+    @Autowired
+    private ChartDataService chartDataService;
 
     public String generateDetailedHTMLReport(String reportPath, String projectPath) throws Exception {
         File reportFile = new File(reportPath);
@@ -35,6 +38,11 @@ public class DetailedReportService {
         html.append("<p>Generated: ").append(new Date()).append("</p>\n");
         html.append("</div>\n");
         
+        // Charts Section
+        html.append("<div class=\"charts-section\">\n");
+        appendCharts(html, issues);
+        html.append("</div>\n");
+        
         // Summary from original report
         html.append("<div class=\"summary\">\n");
         appendSummary(html, reportContent, issues.size());
@@ -49,6 +57,10 @@ public class DetailedReportService {
         }
         
         html.append("</div>\n");
+        html.append("<script src=\"https://cdn.jsdelivr.net/npm/chart.js\"></script>\n");
+        html.append("<script>\n");
+        appendChartScripts(html, reportContent, issues);
+        html.append("</script>\n");
         html.append("</body>\n</html>");
         
         return html.toString();
@@ -82,6 +94,10 @@ public class DetailedReportService {
         html.append(".metric-card { background: white; padding: 15px; border-radius: 8px; border: 1px solid #e5e7eb; }\n");
         html.append(".metric-value { font-size: 24px; font-weight: bold; color: #1f2937; }\n");
         html.append(".metric-label { font-size: 12px; color: #6b7280; margin-top: 5px; }\n");
+        html.append(".charts-section { margin-bottom: 20px; }\n");
+        html.append(".chart-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }\n");
+        html.append(".chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }\n");
+        html.append("canvas { max-width: 100%; height: 300px !important; }\n");
     }
 
     private void appendSummary(StringBuilder html, String reportContent, int issueCount) {
@@ -227,5 +243,95 @@ public class DetailedReportService {
                    .replace(">", "&gt;")
                    .replace("\"", "&quot;")
                    .replace("'", "&#39;");
+    }
+    
+    private void appendCharts(StringBuilder html, List<CodeIssue> issues) {
+        html.append("<h2>Code Quality Visualization</h2>\n");
+        html.append("<div class=\"chart-grid\">\n");
+        
+        html.append("<div class=\"chart-container\">\n");
+        html.append("<h3>Code Distribution</h3>\n");
+        html.append("<canvas id=\"codeDistributionChart\"></canvas>\n");
+        html.append("</div>\n");
+        
+        html.append("<div class=\"chart-container\">\n");
+        html.append("<h3>Code Smell Types</h3>\n");
+        html.append("<canvas id=\"smellTypesChart\"></canvas>\n");
+        html.append("</div>\n");
+        
+        html.append("<div class=\"chart-container\">\n");
+        html.append("<h3>Severity Distribution</h3>\n");
+        html.append("<canvas id=\"severityChart\"></canvas>\n");
+        html.append("</div>\n");
+        
+        html.append("</div>\n");
+    }
+    
+    private void appendChartScripts(StringBuilder html, String reportContent, List<CodeIssue> issues) {
+        // Calculate data
+        Set<String> filesWithSmells = new HashSet<>();
+        Map<String, Integer> smellTypes = new HashMap<>();
+        Map<String, Integer> severityCounts = new HashMap<>();
+        severityCounts.put("Critical", 0);
+        severityCounts.put("High", 0);
+        severityCounts.put("Medium", 0);
+        severityCounts.put("Low", 0);
+        
+        for (CodeIssue issue : issues) {
+            filesWithSmells.add(issue.getFile());
+            smellTypes.merge(issue.getType(), 1, Integer::sum);
+            severityCounts.merge(issue.getSeverity(), 1, Integer::sum);
+        }
+        
+        // Extract total files from report
+        int totalFiles = extractTotalFiles(reportContent);
+        int cleanFiles = Math.max(0, totalFiles - filesWithSmells.size());
+        
+        html.append("\n// Code Distribution Chart\n");
+        html.append("new Chart(document.getElementById('codeDistributionChart'), {\n");
+        html.append("  type: 'pie',\n");
+        html.append("  data: { labels: ['Clean Files', 'Files with Smells'], datasets: [{ data: [").append(cleanFiles).append(", ").append(filesWithSmells.size()).append("], backgroundColor: ['#10b981', '#ef4444'] }] },\n");
+        html.append("  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }\n");
+        html.append("});\n\n");
+        
+        html.append("// Smell Types Chart\n");
+        html.append("new Chart(document.getElementById('smellTypesChart'), {\n");
+        html.append("  type: 'bar',\n");
+        html.append("  data: { labels: [");
+        smellTypes.keySet().forEach(type -> html.append("'").append(type).append("',"));
+        html.append("], datasets: [{ label: 'Count', data: [");
+        smellTypes.values().forEach(count -> html.append(count).append(","));
+        html.append("], backgroundColor: '#3b82f6' }] },\n");
+        html.append("  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }\n");
+        html.append("});\n\n");
+        
+        html.append("// Severity Distribution Chart\n");
+        html.append("new Chart(document.getElementById('severityChart'), {\n");
+        html.append("  type: 'doughnut',\n");
+        html.append("  data: { labels: ['Critical', 'High', 'Medium', 'Low'], datasets: [{ data: [");
+        html.append(severityCounts.get("Critical")).append(", ");
+        html.append(severityCounts.get("High")).append(", ");
+        html.append(severityCounts.get("Medium")).append(", ");
+        html.append(severityCounts.get("Low"));
+        html.append("], backgroundColor: ['#ef4444', '#eab308', '#f97316', '#3b82f6'] }] },\n");
+        html.append("  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }\n");
+        html.append("});\n");
+    }
+    
+    private int extractTotalFiles(String reportContent) {
+        String[] lines = reportContent.split("\n");
+        for (String line : lines) {
+            if (line.contains("Analyzed") && line.contains("files")) {
+                try {
+                    String[] parts = line.split(" ");
+                    for (int i = 0; i < parts.length - 1; i++) {
+                        if (parts[i + 1].equals("files") || parts[i + 1].equals("files,")) {
+                            return Integer.parseInt(parts[i]);
+                        }
+                    }
+                } catch (Exception e) {}
+            }
+        }
+        return 0;
     }
 }

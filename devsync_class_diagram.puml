@@ -1,0 +1,496 @@
+@startuml DevSync Class Diagram
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam backgroundColor white
+skinparam packageBackgroundColor lightyellow
+skinparam classBorderColor black
+
+' Main Application
+package "com.devsync" {
+    class DevsyncApplication {
+        +main(String[]): void
+    }
+}
+
+' Model Layer
+package "com.devsync.model" {
+    class User {
+        -Long id
+        -String username
+        -String email
+        -String password
+        -LocalDateTime createdAt
+        +getId(): Long
+        +getUsername(): String
+        +getEmail(): String
+    }
+    
+    class UserSettings {
+        -Long id
+        -String userId
+        -Boolean longMethodEnabled
+        -Integer maxMethodLength
+        -Boolean magicNumberEnabled
+        -String aiProvider
+        -String aiModel
+        -Boolean aiEnabled
+        +getUserId(): String
+        +getMaxMethodLength(): Integer
+    }
+    
+    class AdminSettings {
+        -Long id
+        -String settingKey
+        -String settingValue
+        -String description
+        -String category
+        +getSettingKey(): String
+        +getSettingValue(): String
+    }
+    
+    class AnalysisHistory {
+        -Long id
+        -String userId
+        -String projectName
+        -String reportPath
+        -LocalDateTime analysisDate
+        -Integer totalIssues
+        -Integer criticalIssues
+        -Integer totalLOC
+        -String grade
+        -Double issueDensity
+        +getReportPath(): String
+        +getTotalIssues(): Integer
+    }
+    
+    class CommitAnalysis {
+        -Long id
+        -String userId
+        -String repoOwner
+        -String repoName
+        -String commitSha
+        -LocalDateTime commitDate
+        -Integer totalIssues
+        -String reportPath
+        +getCommitSha(): String
+    }
+    
+    class CodeIssue {
+        -String type
+        -String file
+        -int line
+        -String severity
+        -String message
+        -String suggestion
+        -LongMethodThresholdDetails thresholdDetails
+        +getType(): String
+        +getSeverity(): String
+    }
+}
+
+' Repository Layer
+package "com.devsync.repository" {
+    interface UserRepository {
+        +findByEmail(String): User
+    }
+    
+    interface UserSettingsRepository {
+        +findByUserId(String): Optional<UserSettings>
+    }
+    
+    interface AdminSettingsRepository {
+        +findBySettingKey(String): Optional<AdminSettings>
+    }
+    
+    interface AnalysisHistoryRepository {
+        +findByUserIdOrderByAnalysisDateDesc(String): List<AnalysisHistory>
+    }
+    
+    interface CommitAnalysisRepository {
+        +findByUserId(String): List<CommitAnalysis>
+    }
+}
+
+' Service Layer
+package "com.devsync.services" {
+    class UserService {
+        -UserRepository userRepository
+        -BCryptPasswordEncoder passwordEncoder
+        +registerUser(User): User
+        +login(String, String): User
+        +getAllUsers(): List<User>
+    }
+    
+    class AdminSettingsService {
+        -AdminSettingsRepository repository
+        +isMaintenanceMode(): boolean
+        +getMaxFileSize(): long
+        +getAllowedFileTypes(): String[]
+        +isAiAnalysisEnabled(): boolean
+    }
+    
+    class AIAssistantService {
+        -HttpClient httpClient
+        -ObjectMapper objectMapper
+        +analyzeWithAI(String, UserSettings): String
+        -analyzeWithOllama(String, UserSettings): String
+        -analyzeWithOpenAI(String, UserSettings): String
+        -analyzeWithAnthropic(String, UserSettings): String
+        -createPrompt(String): String
+    }
+    
+    class OllamaService {
+        -HttpClient httpClient
+        -ObjectMapper objectMapper
+        +sendToOllama(String): String
+        +generateResponse(String): String
+        -isOllamaAvailable(): boolean
+    }
+    
+    class DetailedReportService {
+        +generateDetailedReport(Map): String
+    }
+    
+    class ChartDataService {
+        +generateChartData(Map): Map
+    }
+    
+    class HighlightMapperService {
+        +mapIssueToHighlight(CodeIssue): Map
+    }
+}
+
+' Controller Layer
+package "com.devsync.controller" {
+    class CodeAnalysisController {
+        -AIAssistantService aiAssistantService
+        -AnalysisHistoryRepository analysisHistoryRepository
+        -UserSettingsRepository userSettingsRepository
+        -AdminSettingsService adminSettingsService
+        +handleFileUpload(MultipartFile, String): ResponseEntity
+        +getReport(String, String): ResponseEntity
+        +getUserHistory(String): ResponseEntity
+        +generateVisualReport(MultipartFile): ResponseEntity
+    }
+    
+    class AuthController {
+        -UserService userService
+        +register(User): ResponseEntity
+        +login(LoginRequest): ResponseEntity
+    }
+    
+    class AdminController {
+        -AdminSettingsService adminSettingsService
+        +getSettings(): ResponseEntity
+        +updateSettings(Map): ResponseEntity
+    }
+    
+    class SettingsController {
+        -UserSettingsRepository repository
+        +getUserSettings(String): ResponseEntity
+        +updateSettings(String, UserSettings): ResponseEntity
+    }
+    
+    class GitHubController {
+        +analyzeCommit(String, String, String): ResponseEntity
+    }
+    
+    class HistoryController {
+        -AnalysisHistoryRepository repository
+        +getHistory(String): ResponseEntity
+    }
+}
+
+' Analyzer Layer
+package "com.devsync.analyzer" {
+    class CodeAnalysisEngine {
+        -Map<String, Object> detectors
+        -Map<String, Boolean> enabledDetectors
+        +configureFromSettings(UserSettings): void
+        +analyzeProject(String): Map<String, Object>
+        -analyzeFile(CompilationUnit, String, Map): List<String>
+        -initializeDetectors(): void
+    }
+    
+    class JavaFileCollector {
+        +collectJavaFiles(String): List<File>
+        -collectRecursively(File, List): void
+    }
+    
+    class LOCCounter {
+        +{static} countLinesOfCode(CompilationUnit): int
+        +{static} countPhysicalLines(File): int
+    }
+}
+
+' Detector Layer
+package "com.devsync.detectors" {
+    class LongMethodDetector {
+        -int maxLength
+        -int maxComplexity
+        +detect(CompilationUnit): List<String>
+        +setMaxLength(int): void
+    }
+    
+    class MagicNumberDetector {
+        -int threshold
+        +detect(CompilationUnit): List<String>
+    }
+    
+    class EmptyCatchDetector {
+        +detect(CompilationUnit): List<String>
+    }
+    
+    class ComplexConditionalDetector {
+        -int maxOperators
+        -int maxNestingDepth
+        +detect(CompilationUnit): List<String>
+    }
+    
+    class BrokenModularizationDetector {
+        -int maxResponsibilities
+        -double minCohesion
+        +detect(CompilationUnit): List<String>
+    }
+    
+    class DeficientEncapsulationDetector {
+        +detect(CompilationUnit): List<String>
+    }
+    
+    class MemoryLeakDetector {
+        +detect(CompilationUnit): List<String>
+    }
+    
+    class UnusedVariableDetector {
+        +detect(CompilationUnit): List<String>
+    }
+}
+
+' Grading System
+package "com.devsync.grading" {
+    class GradingSystem {
+        -{static} double EXCELLENT_THRESHOLD
+        -{static} double CRITICAL_WEIGHT
+        +{static} calculateGrade(Map, int): GradeResult
+        -{static} calculateBaseScore(double): double
+        -{static} applyPenalties(double, int, int, int, double): double
+        +{static} generateGradingReport(GradeResult): String
+    }
+    
+    class GradeResult {
+        -String letterGrade
+        -double numericScore
+        -double issueDensity
+        -int totalLOC
+        -int totalIssues
+        -String qualityLevel
+        -String recommendation
+        +getLetterGrade(): String
+        +getIssueDensity(): double
+    }
+}
+
+' Report Generation
+package "com.devsync.reports" {
+    class ReportGenerator {
+        +generateComprehensiveReport(Map): String
+        +{static} generateTextReport(List, String): String
+        +{static} appendAIAnalysis(String, String): void
+        +{static} readReportContent(String): String
+        -deduplicateIssues(List): List
+        -generateTypeBreakdown(List): Map
+        -generateFileBreakdown(List): Map
+    }
+}
+
+' Visual Analysis
+package "com.devsync.visual" {
+    class VisualDependencyAnalyzer {
+        -Map<String, ClassInfo> classes
+        -List<DependencyInfo> dependencies
+        -Set<String> projectPackages
+        +analyzeProject(String): Map<String, Object>
+        -analyzeFile(File): void
+        -analyzeDependencies(File): void
+        -calculateComplexity(ClassOrInterfaceDeclaration): int
+    }
+    
+    class PlantUMLGenerator {
+        +generatePlantUMLText(Map): String
+        +generateDiagramPNG(String): byte[]
+        +saveDiagramToFile(String, String): void
+        -generateClassDefinition(StringBuilder, ClassInfo): void
+        -generateRelationship(StringBuilder, DependencyInfo, Map): void
+    }
+    
+    class ClassInfo {
+        -String className
+        -String packageName
+        -String filePath
+        -int linesOfCode
+        -int complexity
+        -Set<String> imports
+        -String extendsClass
+        -Set<String> implementsInterfaces
+        -boolean isInterface
+        -boolean isAbstract
+        +getFullName(): String
+    }
+    
+    class DependencyInfo {
+        -String fromClass
+        -String toClass
+        -DependencyType type
+        -String description
+        +getArrow(): String
+    }
+    
+    enum DependencyType {
+        EXTENDS
+        IMPLEMENTS
+        USES
+        COMPOSITION
+        AGGREGATION
+    }
+}
+
+' Configuration
+package "com.devsync.config" {
+    class AnalysisConfig {
+        +{static} Map SEVERITY_THRESHOLDS
+        +{static} Set EXCLUDED_PATTERNS
+        +{static} int DEFAULT_MAX_METHOD_LENGTH
+        +{static} isDetectorEnabled(String, UserSettings): boolean
+        +{static} getMaxMethodLength(UserSettings): int
+        +{static} shouldExclude(String): boolean
+    }
+    
+    class SecurityConfig {
+        +configure(HttpSecurity): void
+    }
+    
+    class CorsConfig {
+        +corsConfigurer(): WebMvcConfigurer
+    }
+}
+
+' DTO Layer
+package "com.devsync.dto" {
+    class DetectorConfigDTO {
+        -String name
+        -String description
+        -boolean enabled
+        -List<ParameterInfo> parameters
+        +addParameter(...): void
+    }
+    
+    class LongMethodThresholdDetails {
+        -int actualLength
+        -int threshold
+        -int actualComplexity
+        +getActualLength(): int
+    }
+}
+
+' Utilities
+package "com.devsync.utils" {
+    class ZipExtractor {
+        +{static} extractZip(InputStream, String): void
+    }
+    
+    class FolderNamingUtil {
+        +{static} generateUniqueFolderName(String, String): String
+    }
+    
+    class ReportValidator {
+        +{static} validateReport(String): boolean
+    }
+}
+
+' Relationships - Controllers to Services
+CodeAnalysisController --> AIAssistantService
+CodeAnalysisController --> AdminSettingsService
+CodeAnalysisController --> AnalysisHistoryRepository
+CodeAnalysisController --> UserSettingsRepository
+AuthController --> UserService
+AdminController --> AdminSettingsService
+SettingsController --> UserSettingsRepository
+
+' Services to Repositories
+UserService --> UserRepository
+AdminSettingsService --> AdminSettingsRepository
+
+' Repositories to Models
+UserRepository ..> User
+UserSettingsRepository ..> UserSettings
+AdminSettingsRepository ..> AdminSettings
+AnalysisHistoryRepository ..> AnalysisHistory
+CommitAnalysisRepository ..> CommitAnalysis
+
+' Analysis Engine Relationships
+CodeAnalysisController --> CodeAnalysisEngine
+CodeAnalysisEngine --> JavaFileCollector
+CodeAnalysisEngine --> LOCCounter
+CodeAnalysisEngine --> LongMethodDetector
+CodeAnalysisEngine --> MagicNumberDetector
+CodeAnalysisEngine --> EmptyCatchDetector
+CodeAnalysisEngine --> ComplexConditionalDetector
+CodeAnalysisEngine --> BrokenModularizationDetector
+CodeAnalysisEngine --> DeficientEncapsulationDetector
+CodeAnalysisEngine --> MemoryLeakDetector
+CodeAnalysisEngine --> UnusedVariableDetector
+CodeAnalysisEngine --> UserSettings
+
+' Report Generation
+CodeAnalysisController --> ReportGenerator
+ReportGenerator --> GradingSystem
+GradingSystem ..> GradeResult
+
+' Visual Analysis
+CodeAnalysisController --> VisualDependencyAnalyzer
+CodeAnalysisController --> PlantUMLGenerator
+VisualDependencyAnalyzer ..> ClassInfo
+VisualDependencyAnalyzer ..> DependencyInfo
+PlantUMLGenerator --> ClassInfo
+PlantUMLGenerator --> DependencyInfo
+DependencyInfo --> DependencyType
+
+' Configuration Usage
+CodeAnalysisEngine --> AnalysisConfig
+JavaFileCollector --> AnalysisConfig
+
+' Utilities Usage
+CodeAnalysisController --> ZipExtractor
+CodeAnalysisController --> FolderNamingUtil
+
+' AI Services
+AIAssistantService --> OllamaService
+AIAssistantService --> UserSettings
+
+' DTO Usage
+CodeIssue --> LongMethodThresholdDetails
+
+note right of DevsyncApplication
+  Spring Boot Application
+  Entry Point
+end note
+
+note right of CodeAnalysisEngine
+  Core analysis engine that
+  orchestrates all detectors
+  and generates reports
+end note
+
+note right of GradingSystem
+  Calculates code quality grade
+  based on issue density and
+  industry benchmarks
+end note
+
+note right of VisualDependencyAnalyzer
+  Analyzes project structure
+  and generates dependency
+  information for visualization
+end note
+
+@enduml
