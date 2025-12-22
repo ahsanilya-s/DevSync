@@ -227,7 +227,8 @@ export default function FileViewer() {
         startLine,
         endLine,
         code,
-        message: issue.message
+        message: issue.message,
+        userId: userId
       })
 
       setAiRefactoring({ ...aiRefactoring, [idx]: response.data })

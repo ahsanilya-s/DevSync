@@ -50,10 +50,17 @@ public class AIAssistantService {
         String prompt = createPrompt(reportContent);
         String model = settings.getAiModel() != null ? settings.getAiModel() : "deepseek-coder:latest";
         
-        String requestBody = String.format(
-            "{\"model\": \"%s\", \"messages\": [{\"role\": \"user\", \"content\": \"%s\"}], \"stream\": false}",
-            model, prompt.replace("\"", "\\\"").replace("\n", "\\n")
-        );
+        java.util.Map<String, Object> requestMap = new java.util.HashMap<>();
+        requestMap.put("model", model);
+        requestMap.put("stream", false);
+        
+        java.util.Map<String, String> userMessage = new java.util.HashMap<>();
+        userMessage.put("role", "user");
+        userMessage.put("content", prompt);
+        
+        requestMap.put("messages", java.util.Arrays.asList(userMessage));
+        
+        String requestBody = objectMapper.writeValueAsString(requestMap);
         
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:11434/api/chat"))
@@ -84,10 +91,17 @@ public class AIAssistantService {
         String prompt = createPrompt(reportContent);
         String model = settings.getAiModel() != null ? settings.getAiModel() : "gpt-3.5-turbo";
         
-        String requestBody = String.format(
-            "{\"model\": \"%s\", \"messages\": [{\"role\": \"user\", \"content\": \"%s\"}], \"max_tokens\": 500}",
-            model, prompt.replace("\"", "\\\"").replace("\n", "\\n")
-        );
+        java.util.Map<String, Object> requestMap = new java.util.HashMap<>();
+        requestMap.put("model", model);
+        requestMap.put("max_tokens", 500);
+        
+        java.util.Map<String, String> userMessage = new java.util.HashMap<>();
+        userMessage.put("role", "user");
+        userMessage.put("content", prompt);
+        
+        requestMap.put("messages", java.util.Arrays.asList(userMessage));
+        
+        String requestBody = objectMapper.writeValueAsString(requestMap);
         
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.openai.com/v1/chat/completions"))
@@ -122,10 +136,17 @@ public class AIAssistantService {
         String prompt = createPrompt(reportContent);
         String model = settings.getAiModel() != null ? settings.getAiModel() : "claude-3-haiku-20240307";
         
-        String requestBody = String.format(
-            "{\"model\": \"%s\", \"max_tokens\": 500, \"messages\": [{\"role\": \"user\", \"content\": \"%s\"}]}",
-            model, prompt.replace("\"", "\\\"").replace("\n", "\\n")
-        );
+        java.util.Map<String, Object> requestMap = new java.util.HashMap<>();
+        requestMap.put("model", model);
+        requestMap.put("max_tokens", 500);
+        
+        java.util.Map<String, String> userMessage = new java.util.HashMap<>();
+        userMessage.put("role", "user");
+        userMessage.put("content", prompt);
+        
+        requestMap.put("messages", java.util.Arrays.asList(userMessage));
+        
+        String requestBody = objectMapper.writeValueAsString(requestMap);
         
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.anthropic.com/v1/messages"))
