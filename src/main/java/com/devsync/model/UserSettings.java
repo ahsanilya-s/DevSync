@@ -91,6 +91,10 @@ public class UserSettings {
     @Column(name = "memory_leak_enabled")
     private Boolean memoryLeakEnabled = true;
     
+    // 13. Unused Variable Detector
+    @Column(name = "unused_variable_enabled")
+    private Boolean unusedVariableEnabled = true;
+    
     // AI Assistant settings
     @Column(name = "ai_provider")
     private String aiProvider = "ollama"; // ollama, openai, anthropic, none
@@ -195,6 +199,10 @@ public class UserSettings {
     // Memory Leak
     public Boolean getMemoryLeakEnabled() { return memoryLeakEnabled; }
     public void setMemoryLeakEnabled(Boolean memoryLeakEnabled) { this.memoryLeakEnabled = memoryLeakEnabled; }
+    
+    // Unused Variable
+    public Boolean getUnusedVariableEnabled() { return unusedVariableEnabled; }
+    public void setUnusedVariableEnabled(Boolean unusedVariableEnabled) { this.unusedVariableEnabled = unusedVariableEnabled; }
     
     public String getAiProvider() { return aiProvider; }
     public void setAiProvider(String aiProvider) { this.aiProvider = aiProvider; }
