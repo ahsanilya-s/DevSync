@@ -6,7 +6,13 @@ import { UploadArea } from '../components/UploadArea'
 import { History } from '../components/History'
 import { Settings } from '../components/Settings'
 import { VisualReport } from '../components/VisualReport'
+import { EnhancedVisualReport } from '../components/EnhancedVisualReport'
 import { AdvancedVisualReport } from '../components/AdvancedVisualReport'
+import { AnalysisResults } from '../components/AnalysisResults'
+import { GitHubIntegration } from '../components/GitHubIntegration'
+import { UserProfile } from '../components/UserProfile'
+import { WelcomeGuide } from '../components/WelcomeGuide'
+import { useState as useReactState } from 'react'
 import { Toaster } from '../components/ui/sonner'
 import { toast } from 'sonner'
 import api from '../api'
@@ -16,9 +22,21 @@ import './Home.css'
 export default function Home() {
   const navigate = useNavigate()
   const location = useLocation()
+  
+  // Security check: Verify authentication on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    const userId = localStorage.getItem('userId')
+    if (!token || !userId) {
+      navigate('/login', { replace: true })
+    }
+  }, [])
+  
   const [showResults, setShowResults] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [githubOpen, setGithubOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
   const [_isAnalyzing, setIsAnalyzing] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [analysisResults, setAnalysisResults] = useState(null)
@@ -28,6 +46,8 @@ export default function Home() {
   const [projectName, setProjectName] = useState('')
   const [visualReportData, setVisualReportData] = useState(null)
   const [showVisualReport, setShowVisualReport] = useState(false)
+  const [activeSection, setActiveSection] = useState('guide')
+  const [useEnhancedReport, setUseEnhancedReport] = useState(true)
 
   // Handle returning from file viewer
   useEffect(() => {
@@ -62,7 +82,16 @@ export default function Home() {
     setReportContent('')
     setShowReportModal(false)
     setProjectName('')
+    setActiveSection('upload')
     toast.info("Starting new analysis session")
+  }
+
+  const handleStartAnalysis = () => {
+    setActiveSection('upload')
+    setHistoryOpen(false)
+    setSettingsOpen(false)
+    setGithubOpen(false)
+    setProfileOpen(false)
   }
 
   const handleVisualReport = async (file) => {
@@ -217,6 +246,9 @@ export default function Home() {
   }
 
   const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('userId')
+    localStorage.removeItem('username')
     toast.success('Logged out successfully')
     navigate('/')
   }
@@ -238,9 +270,14 @@ export default function Home() {
       {/* Sidebar */}
       <Sidebar
         onNewAnalysis={handleNewAnalysis}
-        onSettingsClick={() => setSettingsOpen(true)}
-        onHistoryClick={() => setHistoryOpen(true)}
+        onStartAnalysis={handleStartAnalysis}
+        onWelcomeGuideClick={() => setActiveSection('guide')}
+        onSettingsClick={() => { setSettingsOpen(true); setActiveSection('settings'); }}
+        onHistoryClick={() => { setHistoryOpen(true); setActiveSection('history'); }}
+        onGitHubClick={() => { setGithubOpen(true); setActiveSection('github'); }}
+        onUserAccountClick={() => { setProfileOpen(true); setActiveSection('profile'); }}
         isDarkMode={isDarkMode}
+        activeSection={activeSection}
       />
 
       {/* Main Content */}
@@ -253,44 +290,18 @@ export default function Home() {
         />
         
         <main className="contentArea">
-          {!showResults ? (
+          {activeSection === 'guide' ? (
+            <WelcomeGuide isDarkMode={isDarkMode} />
+          ) : !showResults ? (
             <UploadArea onAnalyze={handleAnalyze} onVisualReport={handleVisualReport} isDarkMode={isDarkMode} />
           ) : (
             <div className="resultsContainer">
-              <div className={`resultsCard ${isDarkMode ? 'darkTheme' : 'lightTheme'}`}>
-                <h2 className={`resultsTitle ${isDarkMode ? 'darkTheme' : 'lightTheme'}`}>Analysis Results</h2>
-                <p className={`resultsDescription ${isDarkMode ? 'darkTheme' : 'lightTheme'}`}>Your project analysis has been completed.</p>
-                
-                <div className="statsGrid">
-                  <div className="statCard criticalCard">
-                    <h3 className="statTitle criticalTitle">Critical Issues</h3>
-                    <p className="statValue criticalValue">{analysisResults?.criticalIssues || 0}</p>
-                  </div>
-                  
-                  <div className="statCard warningCard">
-                    <h3 className="statTitle warningTitle">Warnings</h3>
-                    <p className="statValue warningValue">{analysisResults?.warnings || 0}</p>
-                  </div>
-                  
-                  <div className="statCard suggestionCard">
-                    <h3 className="statTitle suggestionTitle">AI Suggestions</h3>
-                    <p className="statValue suggestionValue">{analysisResults?.suggestions || 0}</p>
-                  </div>
-                </div>
-                
-                {/* Analysis Summary */}
-                {analysisResults?.summary && (
-                  <div className="actionButtons">
-                    <button onClick={handleShowReport} className="reportBtn">
-                      View Detailed Report
-                    </button>
-
-                    <button onClick={handleNewAnalysis} className="newAnalysisBtn">
-                      New Analysis
-                    </button>
-                  </div>
-                )}
-              </div>
+              <AnalysisResults
+                results={analysisResults}
+                onShowReport={handleShowReport}
+                onNewAnalysis={handleNewAnalysis}
+                isDarkMode={isDarkMode}
+              />
             </div>
           )}
         </main>
@@ -299,26 +310,51 @@ export default function Home() {
       {/* Settings Modal */}
       <Settings 
         isOpen={settingsOpen} 
-        onClose={() => setSettingsOpen(false)} 
+        onClose={() => { setSettingsOpen(false); setActiveSection('upload'); }} 
         isDarkMode={isDarkMode} 
       />
 
       {/* History Modal */}
       <History
         isOpen={historyOpen}
-        onClose={() => setHistoryOpen(false)}
+        onClose={() => { setHistoryOpen(false); setActiveSection('upload'); }}
         isDarkMode={isDarkMode}
       />
 
-      {/* Visual Report Modal */}
-      <VisualReport
-        reportContent={reportContent}
-        isOpen={showReportModal}
-        onClose={() => setShowReportModal(false)}
+      {/* GitHub Integration Modal */}
+      <GitHubIntegration
+        isOpen={githubOpen}
+        onClose={() => { setGithubOpen(false); setActiveSection('upload'); }}
         isDarkMode={isDarkMode}
-        projectName={projectName}
-        projectPath={reportPath ? reportPath.substring(0, reportPath.lastIndexOf('/')) : ''}
       />
+
+      {/* User Profile Modal */}
+      <UserProfile
+        isOpen={profileOpen}
+        onClose={() => { setProfileOpen(false); setActiveSection('upload'); }}
+        isDarkMode={isDarkMode}
+      />
+
+      {/* Visual Report Modal - Use Enhanced or Fallback */}
+      {useEnhancedReport ? (
+        <EnhancedVisualReport
+          reportContent={reportContent}
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          isDarkMode={isDarkMode}
+          projectName={projectName}
+          projectPath={reportPath ? reportPath.substring(0, reportPath.lastIndexOf('/')) : ''}
+        />
+      ) : (
+        <VisualReport
+          reportContent={reportContent}
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          isDarkMode={isDarkMode}
+          projectName={projectName}
+          projectPath={reportPath ? reportPath.substring(0, reportPath.lastIndexOf('/')) : ''}
+        />
+      )}
 
       {/* Advanced Visual Report Modal */}
       <AdvancedVisualReport

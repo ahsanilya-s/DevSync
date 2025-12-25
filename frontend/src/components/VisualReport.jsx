@@ -1,12 +1,17 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X, AlertTriangle, CheckCircle, XCircle, TrendingUp, FileText, Code, Bug } from 'lucide-react'
 import { Button } from './ui/button'
 import './VisualReport.css'
+import Chart from 'chart.js/auto'
 
 export function VisualReport({ reportContent, isOpen, onClose, isDarkMode, projectName, projectPath }) {
   const [reportData, setReportData] = useState(null)
   const navigate = useNavigate()
+  const codeDistChartRef = useRef(null)
+  const smellTypesChartRef = useRef(null)
+  const severityChartRef = useRef(null)
+  const chartInstances = useRef({})
 
   const handleFileClick = (fileName) => {
     console.log('File clicked:', fileName)
@@ -40,7 +45,18 @@ export function VisualReport({ reportContent, isOpen, onClose, isDarkMode, proje
     if (reportContent && isOpen) {
       parseReportContent(reportContent)
     }
+    
+    return () => {
+      Object.values(chartInstances.current).forEach(chart => chart?.destroy())
+      chartInstances.current = {}
+    }
   }, [reportContent, isOpen])
+  
+  useEffect(() => {
+    if (reportData && isOpen) {
+      renderCharts()
+    }
+  }, [reportData, isOpen, isDarkMode])
 
   const parseReportContent = (content) => {
     try {
@@ -119,7 +135,7 @@ export function VisualReport({ reportContent, isOpen, onClose, isDarkMode, proje
       
       // Parse detailed issues
       if (line.startsWith('🚨 ')) {
-        const cleanLine = line.substring(3).trim() // Remove '🚨 ' prefix (3 chars)
+        const cleanLine = line.substring(2).trim() // Remove '🚨 ' prefix (2 chars)
         
         // Match format: 🔴 [Type] file.java:123 - description
         const issueMatch = cleanLine.match(/^([🔴🟡🟠⚠️])\s+\[(\w+)\]\s+(.+?):(\d+)\s+-\s+(.+)/)
@@ -314,6 +330,76 @@ export function VisualReport({ reportContent, isOpen, onClose, isDarkMode, proje
     if (score >= 50) return { grade: 'D', color: 'text-orange-600', bg: 'bg-orange-100' }
     return { grade: 'F', color: 'text-red-600', bg: 'bg-red-100' }
   }
+  
+  const renderCharts = () => {
+    if (!reportData) return
+    
+    Object.values(chartInstances.current).forEach(chart => chart?.destroy())
+    
+    const cleanFiles = Math.max(0, reportData.totalFiles - Object.keys(reportData.fileStats).length)
+    const filesWithSmells = Object.keys(reportData.fileStats).length
+    
+    if (codeDistChartRef.current) {
+      chartInstances.current.codeDist = new Chart(codeDistChartRef.current, {
+        type: 'pie',
+        data: {
+          labels: ['Clean Files', 'Files with Smells'],
+          datasets: [{
+            data: [cleanFiles, filesWithSmells],
+            backgroundColor: ['#10b981', '#ef4444']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } }
+        }
+      })
+    }
+    
+    if (smellTypesChartRef.current && Object.keys(reportData.typeStats).length > 0) {
+      chartInstances.current.smellTypes = new Chart(smellTypesChartRef.current, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(reportData.typeStats),
+          datasets: [{
+            label: 'Count',
+            data: Object.values(reportData.typeStats),
+            backgroundColor: '#3b82f6'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      })
+    }
+    
+    if (severityChartRef.current) {
+      chartInstances.current.severity = new Chart(severityChartRef.current, {
+        type: 'doughnut',
+        data: {
+          labels: ['Critical', 'High', 'Medium', 'Low'],
+          datasets: [{
+            data: [
+              reportData.severityStats.critical,
+              reportData.severityStats.high,
+              reportData.severityStats.medium,
+              reportData.severityStats.low
+            ],
+            backgroundColor: ['#ef4444', '#eab308', '#f97316', '#3b82f6']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } }
+        }
+      })
+    }
+  }
 
   if (!isOpen || !reportData) return null
 
@@ -401,6 +487,31 @@ export function VisualReport({ reportContent, isOpen, onClose, isDarkMode, proje
           </div>
 
           {/* Issue Severity Breakdown */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            {/* Charts Section */}
+            <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+              <h3 className="text-lg font-semibold mb-4">Code Distribution</h3>
+              <div style={{ height: '250px' }}>
+                <canvas ref={codeDistChartRef}></canvas>
+              </div>
+            </div>
+            
+            <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+              <h3 className="text-lg font-semibold mb-4">Smell Types</h3>
+              <div style={{ height: '250px' }}>
+                <canvas ref={smellTypesChartRef}></canvas>
+              </div>
+            </div>
+            
+            <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+              <h3 className="text-lg font-semibold mb-4">Severity Distribution</h3>
+              <div style={{ height: '250px' }}>
+                <canvas ref={severityChartRef}></canvas>
+              </div>
+            </div>
+          </div>
+
+          {/* Issue Severity Breakdown - Text */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <div className={`p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
               <h3 className="text-lg font-semibold mb-4">Issue Severity Distribution</h3>

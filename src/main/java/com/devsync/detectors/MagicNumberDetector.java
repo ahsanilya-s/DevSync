@@ -9,9 +9,15 @@ import java.util.*;
 
 public class MagicNumberDetector {
     
+    private int threshold = 3;
+    
     private static final Set<String> ACCEPTABLE_NUMBERS = Set.of(
         "0", "1", "-1", "0.0", "1.0", "-1.0", "2", "100", "1000"
     );
+    
+    public void setThreshold(int threshold) {
+        this.threshold = threshold;
+    }
     
     private static final Set<String> SAFE_CONTEXTS = Set.of(
         "test", "constant", "final", "static"
@@ -24,37 +30,35 @@ public class MagicNumberDetector {
         cu.accept(analyzer, null);
         
         for (MagicNumberInfo magicInfo : analyzer.getMagicNumbers()) {
-            if (shouldReport(magicInfo)) {
-                double riskScore = calculateRiskScore(magicInfo);
-                String severity = getSeverity(riskScore);
-                
-                issues.add(String.format(
-                    "%s [MagicNumber] %s:%d - Magic number '%s' in %s - %s | Suggestions: %s",
-                    severity,
-                    magicInfo.fileName,
-                    magicInfo.lineNumber,
-                    magicInfo.value,
-                    magicInfo.context,
-                    generateAnalysis(magicInfo),
-                    generateSuggestions(magicInfo)
-                ));
+            // THRESHOLD CHECK FIRST - binary detection
+            if (ACCEPTABLE_NUMBERS.contains(magicInfo.value) || 
+                magicInfo.isInTestMethod || 
+                magicInfo.isConstant) {
+                continue; // NO SMELL - exit immediately
             }
+            
+            // THRESHOLD EXCEEDED - now calculate score for severity only
+            double riskScore = calculateRiskScore(magicInfo);
+            String severity = getSeverity(riskScore);
+            
+            issues.add(String.format(
+                "%s [MagicNumber] %s:%d - Magic number '%s' in %s - %s | Suggestions: %s | DetailedReason: %s | ThresholdDetails: {\"value\":\"%s\",\"isAcceptable\":false,\"isInTestMethod\":%b,\"isConstant\":false,\"isRepeated\":%b,\"isInBusinessLogic\":%b,\"riskScore\":%.2f,\"summary\":\"Magic numbers are flagged when NOT in acceptable list [0,1,-1,2,100,1000].\"}" ,
+                severity,
+                magicInfo.fileName,
+                magicInfo.lineNumber,
+                magicInfo.value,
+                magicInfo.context,
+                generateAnalysis(magicInfo),
+                generateSuggestions(magicInfo),
+                generateDetailedReason(magicInfo, riskScore),
+                magicInfo.value, magicInfo.isInTestMethod, magicInfo.isRepeated, magicInfo.isInBusinessLogic, riskScore
+            ));
         }
         
         return issues;
     }
     
-    private boolean shouldReport(MagicNumberInfo magicInfo) {
-        if (ACCEPTABLE_NUMBERS.contains(magicInfo.value)) {
-            return false;
-        }
-        
-        if (magicInfo.isInTestMethod || magicInfo.isConstant) {
-            return false;
-        }
-        
-        return true;
-    }
+
     
     private double calculateRiskScore(MagicNumberInfo magicInfo) {
         double score = 0.6;
@@ -102,6 +106,44 @@ public class MagicNumberDetector {
     
     private String generateSuggestions(MagicNumberInfo magicInfo) {
         return "Extract to named constant, use enum for discrete values, document meaning";
+    }
+    
+    private String generateDetailedReason(MagicNumberInfo magicInfo, double riskScore) {
+        StringBuilder reason = new StringBuilder();
+        reason.append("This magic number is flagged as a code smell because: ");
+        
+        List<String> issues = new ArrayList<>();
+        
+        issues.add(String.format("the literal value '%s' is hardcoded without explanation", magicInfo.value));
+        
+        if (magicInfo.isRepeated) {
+            issues.add("this same number appears multiple times in the code, making updates error-prone");
+        }
+        
+        if (magicInfo.isInPublicMethod) {
+            issues.add("it's used in a public method, making the API harder to understand");
+        }
+        
+        if (magicInfo.isInBusinessLogic) {
+            issues.add("it's part of business logic where the meaning should be explicit");
+        }
+        
+        try {
+            double numValue = Double.parseDouble(magicInfo.value);
+            if (Math.abs(numValue) > 1000) {
+                issues.add(String.format("the value %.0f is large and likely represents a domain-specific constant", numValue));
+            }
+            if (numValue % 1 != 0 && Math.abs(numValue) > 1) {
+                issues.add("decimal values like this often represent important thresholds or ratios");
+            }
+        } catch (NumberFormatException e) {
+            // Ignore
+        }
+        
+        reason.append(String.join(", ", issues));
+        reason.append(String.format(". Risk score: %.2f. Magic numbers reduce code readability and make maintenance difficult.", riskScore));
+        
+        return reason.toString();
     }
     
     private static class MagicNumberInfo {

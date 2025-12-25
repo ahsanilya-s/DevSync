@@ -4,7 +4,6 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.ConstructorDeclaration;
-import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -45,26 +44,42 @@ public class LongParameterListDetector {
         cu.accept(analyzer, null);
         
         analyzer.getProblematicMethods().forEach(paramInfo -> {
-            double complexityScore = calculateComplexityScore(paramInfo);
-            
-            if (shouldReport(paramInfo, complexityScore)) {
-                String severity = getSeverity(paramInfo, complexityScore);
-                String analysis = generateAnalysis(paramInfo);
-                String suggestions = generateSuggestions(paramInfo);
-                
-                issues.add(String.format(
-                    "%s [LongParameterList] %s:%d - %s '%s' (%d params, Complexity: %.2f) - %s | Suggestions: %s",
-                    severity,
-                    cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
-                    paramInfo.lineNumber,
-                    paramInfo.isConstructor ? "Constructor" : "Method",
-                    paramInfo.methodName,
-                    paramInfo.parameterCount,
-                    complexityScore,
-                    analysis,
-                    suggestions
-                ));
+            // THRESHOLD CHECK FIRST - binary detection
+            int threshold = paramInfo.isConstructor ? constructorThreshold : baseParameterThreshold;
+            if (paramInfo.parameterCount < threshold) {
+                return; // NO SMELL - exit immediately
             }
+            
+            // THRESHOLD EXCEEDED - now calculate score for severity only
+            double complexityScore = calculateComplexityScore(paramInfo);
+            String severity = getSeverity(paramInfo, complexityScore);
+            String analysis = generateAnalysis(paramInfo);
+            String suggestions = generateSuggestions(paramInfo);
+            
+            issues.add(String.format(
+                "%s [LongParameterList] %s:%d - %s '%s' (%d params, Complexity: %.2f) - %s | Suggestions: %s | DetailedReason: %s | ThresholdDetails: {\"parameterCount\":%d,\"threshold\":%d,\"criticalThreshold\":%d,\"primitiveCount\":%d,\"totalParams\":%d,\"hasConsecutiveSameTypes\":%b,\"lacksCohesion\":%b,\"hasComplexTypes\":%b,\"complexityScore\":%.2f,\"exceedsThreshold\":%b,\"summary\":\"A method is flagged when parameter count >= threshold (%d).\"}",
+                severity,
+                cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
+                paramInfo.lineNumber,
+                paramInfo.isConstructor ? "Constructor" : "Method",
+                paramInfo.methodName,
+                paramInfo.parameterCount,
+                complexityScore,
+                analysis,
+                suggestions,
+                generateDetailedReason(paramInfo, complexityScore),
+                paramInfo.parameterCount,
+                threshold,
+                criticalParameterThreshold,
+                paramInfo.primitiveCount,
+                paramInfo.parameterCount,
+                paramInfo.hasConsecutiveSameTypes,
+                paramInfo.lacksCohesion,
+                paramInfo.hasComplexTypes,
+                complexityScore,
+                paramInfo.parameterCount >= threshold,
+                threshold
+            ));
         });
         
         return issues;
@@ -72,7 +87,6 @@ public class LongParameterListDetector {
     
     private double calculateComplexityScore(ParameterInfo paramInfo) {
         double baseScore = (double) paramInfo.parameterCount / criticalParameterThreshold;
-        
         double typeComplexityScore = calculateTypeComplexity(paramInfo);
         double cohesionScore = calculateParameterCohesion(paramInfo);
         double semanticScore = calculateSemanticComplexity(paramInfo);
@@ -143,30 +157,6 @@ public class LongParameterListDetector {
         }
         
         return 1.0 - ((double) semanticGroups.size() / Math.max(1, paramInfo.parameterCount));
-    }
-    
-    private boolean shouldReport(ParameterInfo paramInfo, double complexityScore) {
-        int threshold = paramInfo.isConstructor ? constructorThreshold : baseParameterThreshold;
-        
-        if (paramInfo.parameterCount < threshold && complexityScore < 0.7) {
-            return false;
-        }
-        
-        if (isExcludedMethod(paramInfo)) {
-            return false;
-        }
-        
-        return paramInfo.parameterCount >= threshold || complexityScore > 0.8;
-    }
-    
-    private boolean isExcludedMethod(ParameterInfo paramInfo) {
-        String name = paramInfo.methodName.toLowerCase();
-        
-        if (name.startsWith("test") && paramInfo.parameterCount <= 6) return true;
-        if (name.equals("main") && paramInfo.parameterCount == 1) return true;
-        if (name.startsWith("builder") && paramInfo.parameterCount <= 8) return true;
-        
-        return false;
     }
     
     private String determineMethodType(ParameterInfo paramInfo) {
@@ -245,6 +235,40 @@ public class LongParameterListDetector {
         suggestions.add("Consider dependency injection");
         
         return String.join(", ", suggestions);
+    }
+    
+    private String generateDetailedReason(ParameterInfo paramInfo, double complexityScore) {
+        StringBuilder reason = new StringBuilder();
+        reason.append(String.format("This %s is flagged as a code smell because: ", 
+            paramInfo.isConstructor ? "constructor" : "method"));
+        
+        List<String> issues = new ArrayList<>();
+        
+        int threshold = paramInfo.isConstructor ? constructorThreshold : baseParameterThreshold;
+        issues.add(String.format("it has %d parameters (threshold: %d)", 
+            paramInfo.parameterCount, threshold));
+        
+        if (paramInfo.primitiveCount > paramInfo.parameterCount * 0.7) {
+            issues.add(String.format("%d out of %d parameters are primitives, indicating primitive obsession", 
+                paramInfo.primitiveCount, paramInfo.parameterCount));
+        }
+        
+        if (paramInfo.hasConsecutiveSameTypes) {
+            issues.add("consecutive parameters have the same type, increasing the risk of passing arguments in wrong order");
+        }
+        
+        if (paramInfo.lacksCohesion) {
+            issues.add("parameters appear unrelated, suggesting the method may have multiple responsibilities");
+        }
+        
+        if (paramInfo.hasComplexTypes) {
+            issues.add("some parameters have complex generic types, adding to cognitive load");
+        }
+        
+        reason.append(String.join(", ", issues));
+        reason.append(String.format(". Complexity score: %.2f. Long parameter lists make methods harder to understand, test, and maintain.", complexityScore));
+        
+        return reason.toString();
     }
     
     private static class ParameterInfo {

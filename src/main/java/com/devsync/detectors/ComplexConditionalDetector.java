@@ -8,37 +8,53 @@ import java.util.*;
 
 public class ComplexConditionalDetector {
     
-    private static final int BASE_COMPLEXITY_THRESHOLD = 4;
-    private static final int CRITICAL_COMPLEXITY_THRESHOLD = 8;
-    private static final int MAX_NESTING_DEPTH = 3;
+    private int BASE_COMPLEXITY_THRESHOLD = 4;
+    private int CRITICAL_COMPLEXITY_THRESHOLD = 8;
+    private int MAX_NESTING_DEPTH = 3;
+    
+    public void setMaxOperators(int maxOperators) {
+        this.BASE_COMPLEXITY_THRESHOLD = maxOperators;
+        this.CRITICAL_COMPLEXITY_THRESHOLD = maxOperators * 2;
+    }
+    
+    public void setMaxNestingDepth(int maxNestingDepth) {
+        this.MAX_NESTING_DEPTH = maxNestingDepth;
+    }
 
     public List<String> detect(CompilationUnit cu) {
         List<String> issues = new ArrayList<>();
         
-        ConditionalAnalyzer analyzer = new ConditionalAnalyzer();
+        ConditionalAnalyzer analyzer = new ConditionalAnalyzer(BASE_COMPLEXITY_THRESHOLD, MAX_NESTING_DEPTH);
         cu.accept(analyzer, null);
         
         analyzer.getComplexConditionals().forEach(condInfo -> {
-            double complexityScore = calculateComplexityScore(condInfo);
-            
-            if (shouldReport(condInfo, complexityScore)) {
-                String severity = getSeverity(condInfo, complexityScore);
-                String analysis = generateAnalysis(condInfo);
-                String suggestions = generateSuggestions(condInfo);
-                
-                issues.add(String.format(
-                    "%s [ComplexConditional] %s:%d - %s (Operators: %d, Depth: %d, Score: %.2f) - %s | Suggestions: %s",
-                    severity,
-                    cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
-                    condInfo.lineNumber,
-                    condInfo.type,
-                    condInfo.operatorCount,
-                    condInfo.nestingDepth,
-                    complexityScore,
-                    analysis,
-                    suggestions
-                ));
+            // THRESHOLD CHECK FIRST - binary detection
+            // Already filtered in analyzer, but double-check
+            if (condInfo.operatorCount < BASE_COMPLEXITY_THRESHOLD && 
+                condInfo.nestingDepth <= MAX_NESTING_DEPTH) {
+                return; // NO SMELL - exit immediately
             }
+            
+            // THRESHOLD EXCEEDED - now calculate score for severity only
+            double complexityScore = calculateComplexityScore(condInfo);
+            String severity = getSeverity(condInfo, complexityScore);
+            String analysis = generateAnalysis(condInfo);
+            String suggestions = generateSuggestions(condInfo);
+            
+            issues.add(String.format(
+                "%s [ComplexConditional] %s:%d - %s (Operators: %d, Depth: %d, Score: %.2f) - %s | Suggestions: %s | DetailedReason: %s | ThresholdDetails: {\"operatorCount\":%d,\"threshold\":%d,\"nestingDepth\":%d,\"maxNestingDepth\":%d,\"hasMethodCalls\":%b,\"hasMixedOperators\":%b,\"hasNegations\":%d,\"complexityScore\":%.2f,\"exceedsOperatorThreshold\":%b,\"exceedsNestingThreshold\":%b,\"summary\":\"Conditionals are flagged when operator count >= 4 OR nesting depth > 3.\"}" ,
+                severity,
+                cu.getStorage().map(s -> s.getFileName()).orElse("UnknownFile"),
+                condInfo.lineNumber,
+                condInfo.type,
+                condInfo.operatorCount,
+                condInfo.nestingDepth,
+                complexityScore,
+                analysis,
+                suggestions,
+                generateDetailedReason(condInfo, complexityScore),
+                condInfo.operatorCount, BASE_COMPLEXITY_THRESHOLD, condInfo.nestingDepth, MAX_NESTING_DEPTH, condInfo.hasMethodCalls, condInfo.hasMixedOperators, condInfo.hasNegations, complexityScore, condInfo.operatorCount >= BASE_COMPLEXITY_THRESHOLD, condInfo.nestingDepth > MAX_NESTING_DEPTH
+            ));
         });
         
         return issues;
@@ -72,11 +88,7 @@ public class ComplexConditionalDetector {
         return Math.min(1.0, score);
     }
     
-    private boolean shouldReport(ConditionalInfo condInfo, double complexityScore) {
-        return condInfo.operatorCount >= BASE_COMPLEXITY_THRESHOLD || 
-               condInfo.nestingDepth > MAX_NESTING_DEPTH || 
-               complexityScore > 0.6;
-    }
+
     
     private String getSeverity(ConditionalInfo condInfo, double complexityScore) {
         if (condInfo.operatorCount > CRITICAL_COMPLEXITY_THRESHOLD || complexityScore > 0.9) {
@@ -127,6 +139,40 @@ public class ComplexConditionalDetector {
         }
         
         return String.join(", ", suggestions);
+    }
+    
+    private String generateDetailedReason(ConditionalInfo condInfo, double complexityScore) {
+        StringBuilder reason = new StringBuilder();
+        reason.append("This conditional is flagged as a code smell because: ");
+        
+        List<String> issues = new ArrayList<>();
+        
+        issues.add(String.format("it has %d logical operators (threshold: %d)", condInfo.operatorCount, BASE_COMPLEXITY_THRESHOLD));
+        
+        if (condInfo.nestingDepth > MAX_NESTING_DEPTH) {
+            issues.add(String.format("nesting depth is %d levels (max: %d)", condInfo.nestingDepth, MAX_NESTING_DEPTH));
+        }
+        
+        if (condInfo.hasNestedParentheses) {
+            issues.add("it has nested parentheses, making it hard to parse");
+        }
+        
+        if (condInfo.hasMixedOperators) {
+            issues.add("it mixes AND and OR operators without clear grouping");
+        }
+        
+        if (condInfo.hasNegations > 1) {
+            issues.add(String.format("it has %d negations, making logic harder to follow", condInfo.hasNegations));
+        }
+        
+        if (condInfo.hasMethodCalls) {
+            issues.add("it includes method calls within the condition");
+        }
+        
+        reason.append(String.join(", ", issues));
+        reason.append(String.format(". Complexity score: %.2f. Complex conditionals are error-prone and hard to test.", complexityScore));
+        
+        return reason.toString();
     }
     
     private static class ConditionalInfo {
@@ -214,6 +260,13 @@ public class ComplexConditionalDetector {
     
     private static class ConditionalAnalyzer extends VoidVisitorAdapter<Void> {
         private final List<ConditionalInfo> complexConditionals = new ArrayList<>();
+        private final int baseThreshold;
+        private final int maxNesting;
+        
+        ConditionalAnalyzer(int baseThreshold, int maxNesting) {
+            this.baseThreshold = baseThreshold;
+            this.maxNesting = maxNesting;
+        }
         
         public List<ConditionalInfo> getComplexConditionals() {
             return complexConditionals;
@@ -243,8 +296,8 @@ public class ComplexConditionalDetector {
         private void analyzeCondition(String type, Expression condition, int lineNumber) {
             ConditionalInfo info = new ConditionalInfo(type, lineNumber, condition);
             
-            if (info.operatorCount >= BASE_COMPLEXITY_THRESHOLD || 
-                info.nestingDepth > MAX_NESTING_DEPTH) {
+            if (info.operatorCount >= baseThreshold || 
+                info.nestingDepth > maxNesting) {
                 complexConditionals.add(info);
             }
         }

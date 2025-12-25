@@ -25,22 +25,27 @@ public class EmptyCatchDetector {
         
         analyzer.getEmptyCatches().forEach(catchInfo -> {
             String lineKey = catchInfo.fileName + ":" + catchInfo.lineNumber;
-            if (!processedLines.contains(lineKey)) {
-                processedLines.add(lineKey);
-                
-                double score = calculateScore(catchInfo);
-                String severity = getSeverity(score);
-                
-                issues.add(String.format(
-                    "%s [EmptyCatch] %s:%d - Empty catch block for %s - %s | Suggestions: %s",
-                    severity,
-                    catchInfo.fileName,
-                    catchInfo.lineNumber,
-                    catchInfo.exceptionType,
-                    generateAnalysis(catchInfo),
-                    generateSuggestions(catchInfo)
-                ));
+            if (processedLines.contains(lineKey)) {
+                return; // Already processed
             }
+            processedLines.add(lineKey);
+            
+            // THRESHOLD CHECK: Empty catch block = ALWAYS a smell (no threshold needed)
+            // Now calculate score for severity only
+            double score = calculateScore(catchInfo);
+            String severity = getSeverity(score);
+            
+            issues.add(String.format(
+                "%s [EmptyCatch] %s:%d - Empty catch block for %s - %s | Suggestions: %s | DetailedReason: %s | ThresholdDetails: {\"exceptionType\":\"%s\",\"isCriticalException\":%b,\"hasComment\":%b,\"hasAcceptablePattern\":%b,\"riskScore\":%.2f,\"summary\":\"Empty catch blocks are ALWAYS flagged as code smells.\"}" ,
+                severity,
+                catchInfo.fileName,
+                catchInfo.lineNumber,
+                catchInfo.exceptionType,
+                generateAnalysis(catchInfo),
+                generateSuggestions(catchInfo),
+                generateDetailedReason(catchInfo),
+                catchInfo.exceptionType, CRITICAL_EXCEPTIONS.contains(catchInfo.exceptionType), catchInfo.hasComment, catchInfo.hasComment && hasAcceptablePattern(catchInfo.comment), score
+            ));
         });
         
         return issues;
@@ -89,6 +94,32 @@ public class EmptyCatchDetector {
     
     private String generateSuggestions(CatchInfo catchInfo) {
         return "Add logging, re-throw, or add explanatory comment";
+    }
+    
+    private String generateDetailedReason(CatchInfo catchInfo) {
+        StringBuilder reason = new StringBuilder();
+        reason.append("This catch block is flagged as a code smell because: ");
+        
+        List<String> issues = new ArrayList<>();
+        
+        issues.add("the catch block is completely empty with no error handling");
+        
+        if (CRITICAL_EXCEPTIONS.contains(catchInfo.exceptionType)) {
+            issues.add(String.format("%s is a critical exception that should never be silently ignored", catchInfo.exceptionType));
+        } else {
+            issues.add(String.format("catching %s without any action hides potential errors", catchInfo.exceptionType));
+        }
+        
+        if (!catchInfo.hasComment) {
+            issues.add("there is no comment explaining why the exception is being ignored");
+        } else if (!hasAcceptablePattern(catchInfo.comment)) {
+            issues.add("the comment does not clearly indicate intentional suppression");
+        }
+        
+        reason.append(String.join(", ", issues));
+        reason.append(". Empty catch blocks can hide bugs and make debugging extremely difficult.");
+        
+        return reason.toString();
     }
     
     private static class CatchInfo {

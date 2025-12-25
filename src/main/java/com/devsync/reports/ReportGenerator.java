@@ -1,5 +1,8 @@
 package com.devsync.reports;
 
+import com.devsync.grading.GradingSystem;
+import com.devsync.grading.GradingSystem.GradeResult;
+
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -42,20 +45,60 @@ public class ReportGenerator {
         Map<String, Integer> severityCounts = calculateSeverityCounts(deduplicatedIssues);
         Map<String, Integer> typeCounts = generateTypeBreakdown(deduplicatedIssues);
         
+        // Get LOC and calculate grade
+        int totalLOC = (Integer) analysisResults.getOrDefault("totalLOC", 0);
+        GradeResult gradeResult = GradingSystem.calculateGrade(severityCounts, totalLOC);
+        
+        // Calculate file statistics
+        int totalFiles = (Integer) analysisResults.getOrDefault("totalFiles", 0);
+        Set<String> filesWithSmells = new HashSet<>();
+        for (String issue : deduplicatedIssues) {
+            String fileName = extractFileName(issue);
+            if (fileName != null) filesWithSmells.add(fileName);
+        }
+        int cleanFiles = totalFiles - filesWithSmells.size();
+        
+        // Add grading report
+        report.append(GradingSystem.generateGradingReport(gradeResult));
+        report.append("\n");
+        
         // Summary
         report.append("SUMMARY\n");
         report.append("-------\n");
         int totalIssues = deduplicatedIssues.size();
-        int totalFiles = (Integer) analysisResults.getOrDefault("totalFiles", 0);
-        report.append(String.format("Analyzed %d files, found %d issues (%d critical, %d high, %d medium, %d low)\n\n",
+        report.append(String.format("Analyzed %d files, found %d issues (%d critical, %d high, %d medium, %d low)\n",
             totalFiles,
             totalIssues,
             severityCounts.getOrDefault("Critical", 0),
             severityCounts.getOrDefault("High", 0),
             severityCounts.getOrDefault("Medium", 0),
             severityCounts.getOrDefault("Low", 0)));
+        report.append(String.format("Clean Files: %d (%.1f%%)\n", cleanFiles, totalFiles > 0 ? (cleanFiles * 100.0 / totalFiles) : 0));
+        report.append(String.format("Files with Smells: %d (%.1f%%)\n", filesWithSmells.size(), totalFiles > 0 ? (filesWithSmells.size() * 100.0 / totalFiles) : 0));
+        report.append(String.format("Lines of Code: %,d\n", totalLOC));
+        report.append(String.format("Issue Density: %.2f issues per KLOC\n\n", gradeResult.getIssueDensity()));
         
-        // Severity breakdown - ensure consistent ordering
+        // Project Metrics
+        int totalClasses = (Integer) analysisResults.getOrDefault("totalClasses", 0);
+        int totalMethods = (Integer) analysisResults.getOrDefault("totalMethods", 0);
+        int totalPackages = (Integer) analysisResults.getOrDefault("totalPackages", 0);
+        int largeClasses = (Integer) analysisResults.getOrDefault("largeClasses", 0);
+        double avgComplexity = (Double) analysisResults.getOrDefault("avgComplexity", 0.0);
+        double avgClassSize = totalClasses > 0 ? (double) totalLOC / totalClasses : 0;
+        double avgMethodsPerClass = totalClasses > 0 ? (double) totalMethods / totalClasses : 0;
+        
+        report.append("PROJECT METRICS\n");
+        report.append("---------------\n");
+        report.append(String.format("Total Lines of Code    : %,d\n", totalLOC));
+        report.append(String.format("Total Classes          : %d\n", totalClasses));
+        report.append(String.format("Total Methods          : %d\n", totalMethods));
+        report.append(String.format("Total Packages         : %d\n", totalPackages));
+        report.append(String.format("Large Classes (>500 LOC): %d\n", largeClasses));
+        report.append(String.format("Average Class Size     : %.1f LOC\n", avgClassSize));
+        report.append(String.format("Average Methods/Class  : %.1f\n", avgMethodsPerClass));
+        report.append(String.format("Average Complexity     : %.1f\n\n", avgComplexity));
+        
+        // Severity breakdown
         report.append("SEVERITY BREAKDOWN\n");
         report.append("------------------\n");
         
@@ -235,6 +278,18 @@ public class ReportGenerator {
         }
         
         return fileBreakdown;
+    }
+    
+    private String extractFileName(String issue) {
+        if (issue.contains("] ") && issue.contains(":")) {
+            String afterBracket = issue.substring(issue.indexOf("] ") + 2);
+            if (afterBracket.contains(":")) {
+                String fullPath = afterBracket.substring(0, afterBracket.indexOf(":"));
+                String fileName = fullPath.contains("/") ? fullPath.substring(fullPath.lastIndexOf("/") + 1) : fullPath;
+                return fileName.contains("\\") ? fileName.substring(fileName.lastIndexOf("\\") + 1) : fileName;
+            }
+        }
+        return null;
     }
 
     public static void appendAIAnalysis(String reportPath, String aiAnalysis) throws IOException {

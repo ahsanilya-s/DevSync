@@ -6,6 +6,69 @@ import { ArrowLeft, AlertCircle, Loader2 } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import api from '../api'
 
+function GenericMetricsDisplay({ details, isDarkMode }) {
+  const formatKey = (key) => {
+    return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())
+  }
+
+  const formatValue = (value) => {
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+    if (typeof value === 'number') return value.toFixed(2).replace(/\.?0+$/, '')
+    return String(value)
+  }
+
+  const isExceededKey = (key) => key.toLowerCase().includes('exceeds') || key.toLowerCase().includes('threshold')
+  const isNegativeIndicator = (key, value) => {
+    if (key.toLowerCase().includes('exceeds') && value === true) return true
+    if (key.toLowerCase().includes('low') && value === true) return true
+    if (key.toLowerCase().includes('high') && value === true) return true
+    if (key.toLowerCase().includes('lacks') && value === true) return true
+    if (key.toLowerCase().includes('critical') && value === true) return true
+    if (key.toLowerCase().includes('mixed') && value === true) return true
+    return false
+  }
+
+  const entries = Object.entries(details).filter(([key]) => key !== 'summary')
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {entries.map(([key, value]) => {
+          const isNegative = isNegativeIndicator(key, value)
+          
+          return (
+            <div
+              key={key}
+              className={`p-3 rounded-lg ${
+                isNegative
+                  ? isDarkMode ? 'bg-red-900/30 border border-red-700' : 'bg-red-50 border border-red-300'
+                  : isDarkMode ? 'bg-green-900/30 border border-green-700' : 'bg-green-50 border border-green-300'
+              }`}
+            >
+              <div className="text-xs font-semibold uppercase tracking-wide mb-1">
+                {isNegative ? '❌' : '✅'} {formatKey(key)}
+              </div>
+              <div className="text-lg font-bold">
+                {formatValue(value)}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      
+      {details.summary && (
+        <div className={`p-3 rounded-lg text-center ${
+          isDarkMode ? 'bg-blue-900/30 border border-blue-700' : 'bg-blue-100 border border-blue-300'
+        }`}>
+          <p className={`text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+            💡 {details.summary}
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function FileViewer() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -19,6 +82,7 @@ export default function FileViewer() {
   const [expandedIssue, setExpandedIssue] = useState(null)
   const [aiRefactoring, setAiRefactoring] = useState({})
   const [loadingAi, setLoadingAi] = useState({})
+  const [showWhyReason, setShowWhyReason] = useState({})
 
   const projectPath = searchParams.get('project')
   const fileName = searchParams.get('file')
@@ -59,6 +123,7 @@ export default function FileViewer() {
       const issuesRes = await api.get('/fileview/issues', {
         params: { projectPath, fileName, userId }
       })
+      console.log('Issues loaded:', issuesRes.data)
       setIssues(issuesRes.data)
 
       setLoading(false)
@@ -162,7 +227,8 @@ export default function FileViewer() {
         startLine,
         endLine,
         code,
-        message: issue.message
+        message: issue.message,
+        userId: userId
       })
 
       setAiRefactoring({ ...aiRefactoring, [idx]: response.data })
@@ -346,17 +412,158 @@ export default function FileViewer() {
                           </p>
                         )}
                         
-                        <button
-                          onClick={() => handleAiRefactor(issue, idx)}
-                          disabled={loadingAi[idx]}
-                          className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                            isDarkMode
-                              ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                              : 'bg-purple-500 hover:bg-purple-600 text-white'
-                          } disabled:opacity-50 disabled:cursor-not-allowed`}
-                        >
-                          {loadingAi[idx] ? '🔄 Loading...' : '🤖 AI Refactored Code'}
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setShowWhyReason({ ...showWhyReason, [idx]: !showWhyReason[idx] })}
+                            className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                              isDarkMode
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                : 'bg-blue-500 hover:bg-blue-600 text-white'
+                            }`}
+                          >
+                            {showWhyReason[idx] ? '❌ Close' : '❓ Why?'}
+                          </button>
+                          
+                          <button
+                            onClick={() => handleAiRefactor(issue, idx)}
+                            disabled={loadingAi[idx]}
+                            className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                              isDarkMode
+                                ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                                : 'bg-purple-500 hover:bg-purple-600 text-white'
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          >
+                            {loadingAi[idx] ? '🔄 Loading...' : '🤖 AI Refactored Code'}
+                          </button>
+                        </div>
+
+                        {showWhyReason[idx] && (
+                          <div className={`mt-4 p-4 rounded-lg border ${
+                            isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-blue-50 border-blue-200'
+                          }`}>
+                            <h4 className="font-semibold mb-3 text-blue-500 flex items-center gap-2">
+                              <span>❓</span>
+                              <span>Why is this a code smell?</span>
+                            </h4>
+                            
+                            {issue.thresholdDetailsJson ? (
+                              <GenericMetricsDisplay details={JSON.parse(issue.thresholdDetailsJson)} isDarkMode={isDarkMode} />
+                            ) : issue.type === 'LongMethod' && issue.thresholdDetails ? (
+                              <div className="space-y-3">
+                                <div className={`grid grid-cols-1 md:grid-cols-2 gap-3`}>
+                                  <div className={`p-3 rounded-lg ${
+                                    issue.thresholdDetails.exceedsStatementCount
+                                      ? isDarkMode ? 'bg-red-900/30 border border-red-700' : 'bg-red-50 border border-red-300'
+                                      : isDarkMode ? 'bg-green-900/30 border border-green-700' : 'bg-green-50 border border-green-300'
+                                  }`}>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-xs font-semibold uppercase tracking-wide">
+                                        {issue.thresholdDetails.exceedsStatementCount ? '❌' : '✅'} Statement Count
+                                      </span>
+                                    </div>
+                                    <div className="text-sm">
+                                      <span className="font-bold text-lg">{issue.thresholdDetails.statementCount}</span>
+                                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}> / {issue.thresholdDetails.baseThreshold}</span>
+                                    </div>
+                                    <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                      Base: {issue.thresholdDetails.baseThreshold}, Critical: {issue.thresholdDetails.criticalThreshold}
+                                    </div>
+                                  </div>
+
+                                  <div className={`p-3 rounded-lg ${
+                                    issue.thresholdDetails.exceedsCyclomaticComplexity
+                                      ? isDarkMode ? 'bg-red-900/30 border border-red-700' : 'bg-red-50 border border-red-300'
+                                      : isDarkMode ? 'bg-green-900/30 border border-green-700' : 'bg-green-50 border border-green-300'
+                                  }`}>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-xs font-semibold uppercase tracking-wide">
+                                        {issue.thresholdDetails.exceedsCyclomaticComplexity ? '❌' : '✅'} Cyclomatic Complexity
+                                      </span>
+                                    </div>
+                                    <div className="text-sm">
+                                      <span className="font-bold text-lg">{issue.thresholdDetails.cyclomaticComplexity}</span>
+                                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}> / {issue.thresholdDetails.maxCyclomaticComplexity}</span>
+                                    </div>
+                                    <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                      Decision points (if/for/while)
+                                    </div>
+                                  </div>
+
+                                  <div className={`p-3 rounded-lg ${
+                                    issue.thresholdDetails.exceedsCognitiveComplexity
+                                      ? isDarkMode ? 'bg-red-900/30 border border-red-700' : 'bg-red-50 border border-red-300'
+                                      : isDarkMode ? 'bg-green-900/30 border border-green-700' : 'bg-green-50 border border-green-300'
+                                  }`}>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-xs font-semibold uppercase tracking-wide">
+                                        {issue.thresholdDetails.exceedsCognitiveComplexity ? '❌' : '✅'} Cognitive Complexity
+                                      </span>
+                                    </div>
+                                    <div className="text-sm">
+                                      <span className="font-bold text-lg">{issue.thresholdDetails.cognitiveComplexity}</span>
+                                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}> / {issue.thresholdDetails.maxCognitiveComplexity}</span>
+                                    </div>
+                                    <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                      How hard to understand
+                                    </div>
+                                  </div>
+
+                                  <div className={`p-3 rounded-lg ${
+                                    issue.thresholdDetails.exceedsNestingDepth
+                                      ? isDarkMode ? 'bg-red-900/30 border border-red-700' : 'bg-red-50 border border-red-300'
+                                      : isDarkMode ? 'bg-green-900/30 border border-green-700' : 'bg-green-50 border border-green-300'
+                                  }`}>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-xs font-semibold uppercase tracking-wide">
+                                        {issue.thresholdDetails.exceedsNestingDepth ? '❌' : '✅'} Nesting Depth
+                                      </span>
+                                    </div>
+                                    <div className="text-sm">
+                                      <span className="font-bold text-lg">{issue.thresholdDetails.nestingDepth}</span>
+                                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}> / {issue.thresholdDetails.maxNestingDepth}</span>
+                                    </div>
+                                    <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                      Levels of nested blocks
+                                    </div>
+                                  </div>
+
+                                  <div className={`p-3 rounded-lg md:col-span-2 ${
+                                    issue.thresholdDetails.exceedsResponsibilityCount
+                                      ? isDarkMode ? 'bg-red-900/30 border border-red-700' : 'bg-red-50 border border-red-300'
+                                      : isDarkMode ? 'bg-green-900/30 border border-green-700' : 'bg-green-50 border border-green-300'
+                                  }`}>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-xs font-semibold uppercase tracking-wide">
+                                        {issue.thresholdDetails.exceedsResponsibilityCount ? '❌' : '✅'} Responsibility Count
+                                      </span>
+                                    </div>
+                                    <div className="text-sm">
+                                      <span className="font-bold text-lg">{issue.thresholdDetails.responsibilityCount}</span>
+                                      <span className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}> / {issue.thresholdDetails.maxResponsibilityCount}</span>
+                                    </div>
+                                    <div className={`text-xs mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                      Single Responsibility Principle
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div className={`p-3 rounded-lg text-center ${
+                                  isDarkMode ? 'bg-blue-900/30 border border-blue-700' : 'bg-blue-100 border border-blue-300'
+                                }`}>
+                                  <p className={`text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                                    💡 {issue.thresholdDetails.summary}
+                                  </p>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className={`text-sm leading-relaxed ${
+                                isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                              }`}>
+                                {issue.detailedReason || 'Detailed explanation not available. Please re-analyze the project to generate detailed reasons.'}
+                              </p>
+                            )}
+                          </div>
+                        )}
 
                         {expandedIssue === idx && aiRefactoring[idx] && (
                           <div className={`mt-4 p-4 rounded-lg border max-w-full overflow-hidden ${

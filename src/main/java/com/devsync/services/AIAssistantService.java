@@ -50,10 +50,17 @@ public class AIAssistantService {
         String prompt = createPrompt(reportContent);
         String model = settings.getAiModel() != null ? settings.getAiModel() : "deepseek-coder:latest";
         
-        String requestBody = String.format(
-            "{\"model\": \"%s\", \"messages\": [{\"role\": \"user\", \"content\": \"%s\"}], \"stream\": false}",
-            model, prompt.replace("\"", "\\\"").replace("\n", "\\n")
-        );
+        java.util.Map<String, Object> requestMap = new java.util.HashMap<>();
+        requestMap.put("model", model);
+        requestMap.put("stream", false);
+        
+        java.util.Map<String, String> userMessage = new java.util.HashMap<>();
+        userMessage.put("role", "user");
+        userMessage.put("content", prompt);
+        
+        requestMap.put("messages", java.util.Arrays.asList(userMessage));
+        
+        String requestBody = objectMapper.writeValueAsString(requestMap);
         
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:11434/api/chat"))
@@ -84,10 +91,17 @@ public class AIAssistantService {
         String prompt = createPrompt(reportContent);
         String model = settings.getAiModel() != null ? settings.getAiModel() : "gpt-3.5-turbo";
         
-        String requestBody = String.format(
-            "{\"model\": \"%s\", \"messages\": [{\"role\": \"user\", \"content\": \"%s\"}], \"max_tokens\": 500}",
-            model, prompt.replace("\"", "\\\"").replace("\n", "\\n")
-        );
+        java.util.Map<String, Object> requestMap = new java.util.HashMap<>();
+        requestMap.put("model", model);
+        requestMap.put("max_tokens", 500);
+        
+        java.util.Map<String, String> userMessage = new java.util.HashMap<>();
+        userMessage.put("role", "user");
+        userMessage.put("content", prompt);
+        
+        requestMap.put("messages", java.util.Arrays.asList(userMessage));
+        
+        String requestBody = objectMapper.writeValueAsString(requestMap);
         
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.openai.com/v1/chat/completions"))
@@ -122,10 +136,17 @@ public class AIAssistantService {
         String prompt = createPrompt(reportContent);
         String model = settings.getAiModel() != null ? settings.getAiModel() : "claude-3-haiku-20240307";
         
-        String requestBody = String.format(
-            "{\"model\": \"%s\", \"max_tokens\": 500, \"messages\": [{\"role\": \"user\", \"content\": \"%s\"}]}",
-            model, prompt.replace("\"", "\\\"").replace("\n", "\\n")
-        );
+        java.util.Map<String, Object> requestMap = new java.util.HashMap<>();
+        requestMap.put("model", model);
+        requestMap.put("max_tokens", 500);
+        
+        java.util.Map<String, String> userMessage = new java.util.HashMap<>();
+        userMessage.put("role", "user");
+        userMessage.put("content", prompt);
+        
+        requestMap.put("messages", java.util.Arrays.asList(userMessage));
+        
+        String requestBody = objectMapper.writeValueAsString(requestMap);
         
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.anthropic.com/v1/messages"))
@@ -154,12 +175,18 @@ public class AIAssistantService {
     
     private String createPrompt(String reportContent) {
         if (reportContent.contains("No issues found")) {
-            return "Great job! Your code analysis shows no issues. Provide 3 quick tips to keep Java code excellent.";
+            return "You are a senior Java code reviewer. The code analysis shows no issues. Provide 3 actionable tips to maintain excellent code quality, focusing on: 1) Code maintainability 2) Performance optimization 3) Best practices. Keep response under 200 words.";
         }
         
-        String limitedContent = reportContent.length() > 2000 ? 
-            reportContent.substring(0, 2000) + "\n..." : reportContent;
-        return "Code issues found:\n" + limitedContent + "\n\nProvide 3 specific fixes for the main issues.";
+        String limitedContent = reportContent.length() > 3000 ? 
+            reportContent.substring(0, 3000) + "\n..." : reportContent;
+        
+        return "You are a senior Java code reviewer. Analyze this code quality report and provide:\n" +
+               "1. Top 3 critical issues that need immediate attention\n" +
+               "2. Specific code refactoring suggestions with examples\n" +
+               "3. Best practices to prevent these issues\n\n" +
+               "Report:\n" + limitedContent + "\n\n" +
+               "Keep response concise (under 300 words) and actionable.";
     }
     
     private boolean isOllamaAvailable() {

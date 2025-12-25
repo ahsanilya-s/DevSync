@@ -7,6 +7,22 @@ import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import java.util.*;
 
 public class BrokenModularizationDetector {
+    
+    private int maxResponsibilities = 3;
+    private double minCohesion = 0.4;
+    private int maxCoupling = 6;
+    
+    public void setMaxResponsibilities(int maxResponsibilities) {
+        this.maxResponsibilities = maxResponsibilities;
+    }
+    
+    public void setMinCohesion(double minCohesion) {
+        this.minCohesion = minCohesion;
+    }
+    
+    public void setMaxCoupling(int maxCoupling) {
+        this.maxCoupling = maxCoupling;
+    }
 
     public List<String> detect(CompilationUnit cu) {
         List<String> issues = new ArrayList<>();
@@ -17,23 +33,38 @@ public class BrokenModularizationDetector {
         
         analyzer.getModularizationIssues().forEach(modInfo -> {
             String entityKey = modInfo.fileName + ":" + modInfo.name;
-            if (!processedEntities.contains(entityKey) && shouldReport(modInfo)) {
-                processedEntities.add(entityKey);
-                
-                double score = calculateScore(modInfo);
-                String severity = getSeverity(score);
-                
-                issues.add(String.format(
-                    "%s [BrokenModularization] %s:%d - %s '%s' - %s | Suggestions: %s",
-                    severity,
-                    modInfo.fileName,
-                    modInfo.lineNumber,
-                    modInfo.type,
-                    modInfo.name,
-                    generateAnalysis(modInfo),
-                    generateSuggestions(modInfo)
-                ));
+            if (processedEntities.contains(entityKey)) {
+                return; // Already processed
             }
+            processedEntities.add(entityKey);
+            
+            // THRESHOLD CHECK FIRST - binary detection
+            if (modInfo.responsibilityCount <= maxResponsibilities && 
+                modInfo.cohesionIndex >= minCohesion && 
+                modInfo.couplingCount <= maxCoupling) {
+                return; // NO SMELL - exit immediately
+            }
+            
+            // THRESHOLD EXCEEDED - now calculate score for severity only
+            double score = calculateScore(modInfo);
+            String severity = getSeverity(score);
+            
+            issues.add(String.format(
+                "%s [BrokenModularization] %s:%d - %s '%s' - %s | Suggestions: %s | DetailedReason: This %s has broken modularization with %d responsibilities, cohesion index of %.2f, and coupling count of %d. %s | ThresholdDetails: {\"responsibilityCount\":%d,\"threshold\":%d,\"cohesionIndex\":%.2f,\"minCohesion\":%.2f,\"couplingCount\":%d,\"maxCoupling\":%d,\"hasMixedConcerns\":%b,\"exceedsResponsibilities\":%b,\"lowCohesion\":%b,\"highCoupling\":%b,\"summary\":\"Classes are flagged when responsibilities > %d OR cohesion < %.2f OR coupling > %d.\"}" ,
+                severity,
+                modInfo.fileName,
+                modInfo.lineNumber,
+                modInfo.type,
+                modInfo.name,
+                generateAnalysis(modInfo),
+                generateSuggestions(modInfo),
+                modInfo.type.toLowerCase(),
+                modInfo.responsibilityCount,
+                modInfo.cohesionIndex,
+                modInfo.couplingCount,
+                modInfo.hasMixedConcerns ? "It mixes unrelated concerns." : "It violates Single Responsibility Principle.",
+                modInfo.responsibilityCount, maxResponsibilities, modInfo.cohesionIndex, minCohesion, modInfo.couplingCount, maxCoupling, modInfo.hasMixedConcerns, modInfo.responsibilityCount > maxResponsibilities, modInfo.cohesionIndex < minCohesion, modInfo.couplingCount > maxCoupling, maxResponsibilities, minCohesion, maxCoupling
+            ));
         });
         
         return issues;
@@ -48,13 +79,7 @@ public class BrokenModularizationDetector {
         return cohesionScore * 0.3 + couplingScore * 0.3 + responsibilityScore * 0.2 + mixedConcernScore;
     }
     
-    private boolean shouldReport(ModularizationInfo modInfo) {
-        // Only report significant modularization issues
-        return (modInfo.responsibilityCount > 4) || 
-               (modInfo.cohesionIndex < 0.3) || 
-               (modInfo.couplingCount > 8) ||
-               (modInfo.hasMixedConcerns && modInfo.responsibilityCount > 3);
-    }
+
     
     private String getSeverity(double score) {
         if (score >= 0.8) return "🔴";
@@ -68,13 +93,13 @@ public class BrokenModularizationDetector {
         if (modInfo.hasMixedConcerns) {
             issues.add("Mixed unrelated concerns");
         }
-        if (modInfo.cohesionIndex < 0.4) {
+        if (modInfo.cohesionIndex < minCohesion) {
             issues.add("Low cohesion");
         }
-        if (modInfo.couplingCount > 6) {
+        if (modInfo.couplingCount > maxCoupling) {
             issues.add("High coupling");
         }
-        if (modInfo.responsibilityCount > 3) {
+        if (modInfo.responsibilityCount > maxResponsibilities) {
             issues.add("Multiple responsibilities");
         }
         
@@ -85,7 +110,7 @@ public class BrokenModularizationDetector {
         if (modInfo.hasMixedConcerns) {
             return "Separate unrelated operations into different methods";
         }
-        if (modInfo.responsibilityCount > 3) {
+        if (modInfo.responsibilityCount > maxResponsibilities) {
             return "Apply Single Responsibility Principle";
         }
         return "Improve cohesion and reduce coupling";

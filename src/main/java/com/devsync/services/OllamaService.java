@@ -18,7 +18,7 @@ public class OllamaService {
     
     public OllamaService() {
         this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(java.time.Duration.ofSeconds(30))
+                .connectTimeout(java.time.Duration.ofSeconds(10))
                 .build();
         this.objectMapper = new ObjectMapper();
     }
@@ -43,14 +43,14 @@ public class OllamaService {
         }
         
         String requestBody = String.format(
-            "{\"model\": \"deepseek-coder:latest\", \"messages\": [{\"role\": \"user\", \"content\": \"%s\"}], \"stream\": false}",
+            "{\"model\": \"llama3.1:latest\", \"messages\": [{\"role\": \"system\", \"content\": \"You are a helpful assistant.\"}, {\"role\": \"user\", \"content\": \"%s\"}], \"stream\": false}",
             prompt.replace("\"", "\\\"").replace("\n", "\\n")
         );
         
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(OLLAMA_URL))
                 .header("Content-Type", "application/json")
-                .timeout(java.time.Duration.ofMinutes(2))
+                .timeout(java.time.Duration.ofMinutes(5))
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .build();
         
@@ -77,40 +77,59 @@ public class OllamaService {
                     .GET()
                     .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            return response.statusCode() == 200;
+            boolean available = response.statusCode() == 200;
+            if (available) {
+                System.out.println("[OLLAMA] Service is available at http://localhost:11434");
+            }
+            return available;
         } catch (Exception e) {
+            System.err.println("[OLLAMA ERROR] Cannot connect to Ollama: " + e.getMessage());
             return false;
         }
     }
     
     public String generateResponse(String prompt) throws IOException, InterruptedException {
         if (!isOllamaAvailable()) {
+            System.err.println("[OLLAMA ERROR] Ollama service is not available at http://localhost:11434");
+            System.err.println("[OLLAMA ERROR] Please ensure Ollama is running: ollama serve");
+            System.err.println("[OLLAMA ERROR] And model is installed: ollama pull llama3.1:latest");
             return "AI service is not available. Please ensure Ollama is running.";
         }
         
+        System.out.println("[OLLAMA] Sending request to Ollama...");
+        
         String requestBody = String.format(
-            "{\"model\": \"deepseek-coder:latest\", \"messages\": [{\"role\": \"user\", \"content\": \"%s\"}], \"stream\": false}",
+            "{\"model\": \"llama3.1:latest\", \"messages\": [{\"role\": \"system\", \"content\": \"You are a code assistant. Always return results exactly as requested. If JSON is requested, return only valid JSON with no additional text.\"}, {\"role\": \"user\", \"content\": \"%s\"}], \"stream\": false, \"options\": {\"temperature\": 0.2, \"num_predict\": 500}}",
             prompt.replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "")
         );
         
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(OLLAMA_URL))
                 .header("Content-Type", "application/json")
-                .timeout(java.time.Duration.ofMinutes(2))
+                .timeout(java.time.Duration.ofMinutes(5))
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .build();
         
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         
+        System.out.println("[OLLAMA] Response status: " + response.statusCode());
+        
         if (response.statusCode() == 200) {
             JsonNode jsonResponse = objectMapper.readTree(response.body());
             JsonNode messageNode = jsonResponse.get("message");
             if (messageNode != null && messageNode.get("content") != null) {
-                return messageNode.get("content").asText();
+                String content = messageNode.get("content").asText();
+                System.out.println("[OLLAMA] Successfully received response (" + content.length() + " chars)");
+                return content;
+            } else {
+                System.err.println("[OLLAMA ERROR] Response missing 'message.content' field");
+                System.err.println("[OLLAMA ERROR] Response body: " + response.body());
             }
+        } else {
+            System.err.println("[OLLAMA ERROR] HTTP " + response.statusCode() + ": " + response.body());
         }
         
-        throw new IOException("Failed to get response from Ollama");
+        throw new IOException("Failed to get response from Ollama: HTTP " + response.statusCode());
     }
     
     private String generateFallbackAnalysis(String reportContent) {

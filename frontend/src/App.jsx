@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
 import { Toaster } from './components/ui/sonner'
 import { Card } from './components/ui/card'
-import { Sun, Moon } from 'lucide-react'
+import { Sun, Moon, Sparkles, Zap, Shield, TrendingUp } from 'lucide-react'
 
 // Import existing pages
 import Home from './pages/Home'
@@ -10,7 +10,7 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import AdminPanel from './pages/AdminPanel'
 import AdminLogin from './pages/AdminLogin'
-import Dashboard from './pages/Dashboard'
+import ProtectedRoute from './components/ProtectedRoute'
 
 // Import new pages
 import Features from './pages/Features'
@@ -69,15 +69,11 @@ function LandingPage({ onLogin, onSignup, isDarkMode, setIsDarkMode }) {
         : 'bg-white text-gray-900'
     }`}>
       {/* Animated Gradient Orbs */}
-      {isDarkMode && (
-        <>
-          <div className="fixed top-0 left-0 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-3xl animate-pulse pointer-events-none" />
-          <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-3xl animate-pulse pointer-events-none" 
-               style={{ animationDelay: '1s' }} />
-          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-violet-600/10 rounded-full blur-3xl animate-pulse pointer-events-none"
-               style={{ animationDelay: '2s' }} />
-        </>
-      )}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className={`absolute top-0 left-0 w-[600px] h-[600px] rounded-full blur-3xl animate-pulse ${isDarkMode ? 'bg-blue-600/20' : 'bg-blue-400/10'}`} />
+        <div className={`absolute bottom-0 right-0 w-[600px] h-[600px] rounded-full blur-3xl animate-pulse ${isDarkMode ? 'bg-purple-600/20' : 'bg-purple-400/10'}`} style={{ animationDelay: '1s' }} />
+        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-3xl animate-pulse ${isDarkMode ? 'bg-violet-600/10' : 'bg-cyan-400/10'}`} style={{ animationDelay: '2s' }} />
+      </div>
 
       <div className="relative z-10">
         {/* Header */}
@@ -89,12 +85,15 @@ function LandingPage({ onLogin, onSignup, isDarkMode, setIsDarkMode }) {
           <div className="container mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               {/* Logo */}
-              <div className="flex items-center ml-4">
+              <div className="flex items-center gap-3 ml-4">
                 <img 
                   src={isDarkMode ? "/logo_for_blacktheme.png" : "/logo_for_whitetheme.png"} 
                   alt="DevSync" 
                   className="h-10 w-auto transition-opacity duration-500" 
                 />
+                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                  DevSync
+                </span>
               </div>
 
               {/* Right Side Buttons */}
@@ -152,18 +151,22 @@ function LandingPage({ onLogin, onSignup, isDarkMode, setIsDarkMode }) {
         </header>
 
         {/* Hero Section */}
-        <section className="py-24 px-6 overflow-hidden">
+        <section className="py-32 px-6 overflow-hidden relative">
           <div className="container mx-auto max-w-6xl text-center">
             <div className="animate-fade-in-up">
-              <h1 className={`text-6xl font-semibold mb-8 transition-colors duration-500 ${
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 mb-6">
+                <Sparkles className="w-4 h-4 text-blue-500" />
+                <span className="text-sm font-medium">AI-Powered Code Analysis</span>
+              </div>
+              <h1 className={`text-7xl font-bold mb-8 transition-colors duration-500 leading-tight ${
                 isDarkMode ? 'text-white' : 'text-gray-900'
               }`}>
                 Eliminate Java
                 <br />
-                <span className={`bg-gradient-to-r bg-clip-text text-transparent transition-all duration-500 ${
+                <span className={`bg-gradient-to-r bg-clip-text text-transparent transition-all duration-500 animate-gradient ${
                   isDarkMode
-                    ? 'from-blue-400 to-purple-400'
-                    : 'from-blue-600 to-purple-600'
+                    ? 'from-blue-400 via-purple-400 to-cyan-400'
+                    : 'from-blue-600 via-purple-600 to-cyan-600'
                 }`}>
                   Code Smells
                 </span>
@@ -183,12 +186,12 @@ function LandingPage({ onLogin, onSignup, isDarkMode, setIsDarkMode }) {
               <Button
                 onClick={onLogin}
                 size="lg"
-                className={`transition-all duration-500 hover:scale-105 ${
+                className={`transition-all duration-500 hover:scale-110 hover:-translate-y-1 group ${
                   isDarkMode
-                    ? 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-2xl shadow-blue-500/50'
-                    : 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-lg'
-                }`}
-              >
+                    ? 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-2xl shadow-blue-500/50 hover:shadow-blue-500/70'
+                    : 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-lg hover:shadow-xl'
+                }`}>
+                <Zap className="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform" />
                 Analyze Your Code
               </Button>
               
@@ -196,14 +199,30 @@ function LandingPage({ onLogin, onSignup, isDarkMode, setIsDarkMode }) {
                 onClick={handleLearnMore}
                 variant="outline"
                 size="lg"
-                className={`transition-all duration-500 hover:scale-105 ${
+                className={`transition-all duration-500 hover:scale-110 hover:-translate-y-1 ${
                   isDarkMode
                     ? 'border-purple-500/50 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200 hover:border-purple-500/60'
                     : 'border-gray-300 text-gray-700 hover:bg-gray-100'
-                }`}
-              >
+                }`}>
                 Learn More
               </Button>
+            </div>
+            
+            {/* Stats Section */}
+            <div className="mt-20 grid grid-cols-3 gap-8 max-w-3xl mx-auto">
+              {[
+                { value: '10K+', label: 'Projects Analyzed', icon: TrendingUp },
+                { value: '99.9%', label: 'Accuracy Rate', icon: Shield },
+                { value: '50K+', label: 'Issues Detected', icon: Sparkles }
+              ].map((stat, idx) => (
+                <div key={idx} className={`p-6 rounded-2xl backdrop-blur-sm border transition-all duration-500 hover:scale-105 ${
+                  isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white/80 border-gray-200 shadow-lg'
+                }`}>
+                  <stat.icon className="w-8 h-8 mx-auto mb-3 text-blue-500" />
+                  <div className="text-3xl font-bold mb-1">{stat.value}</div>
+                  <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{stat.label}</div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -377,6 +396,85 @@ function LandingPage({ onLogin, onSignup, isDarkMode, setIsDarkMode }) {
               </div>
             </section>
 
+            {/* Technology Stack Section */}
+            <section className="py-24 px-6">
+              <div className="container mx-auto max-w-6xl">
+                <div className="animate-on-scroll text-center mb-16">
+                  <h2 className={`text-4xl font-bold mb-6 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>Powered by Advanced Technology</h2>
+                  <p className={`text-lg max-w-3xl mx-auto ${
+                    isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                  }`}>
+                    Built with cutting-edge tools and frameworks for maximum performance
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  {[
+                    { name: 'Java AST', icon: '☕' },
+                    { name: 'AI/ML', icon: '🤖' },
+                    { name: 'Spring Boot', icon: '🍃' },
+                    { name: 'React', icon: '⚛️' },
+                    { name: 'PostgreSQL', icon: '🐘' },
+                    { name: 'Docker', icon: '🐳' },
+                    { name: 'AWS', icon: '☁️' },
+                    { name: 'Redis', icon: '🔴' }
+                  ].map((tech, idx) => (
+                    <div key={idx} className={`p-6 rounded-xl text-center transition-all duration-500 hover:scale-110 hover:-translate-y-2 ${
+                      isDarkMode ? 'bg-gray-800/50 border border-gray-700' : 'bg-white border border-gray-200 shadow-lg'
+                    }`}>
+                      <div className="text-4xl mb-3 animate-float" style={{ animationDelay: `${idx * 0.1}s` }}>{tech.icon}</div>
+                      <div className={`font-semibold ${
+                        isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                      }`}>{tech.name}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* Testimonials Section */}
+            <section className={`py-24 px-6 ${
+              isDarkMode ? 'bg-gray-900/30' : 'bg-blue-50/30'
+            }`}>
+              <div className="container mx-auto max-w-6xl">
+                <div className="animate-on-scroll text-center mb-16">
+                  <h2 className={`text-4xl font-bold mb-6 ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}>Trusted by Developers Worldwide</h2>
+                  <p className={`text-lg max-w-3xl mx-auto ${
+                    isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                  }`}>
+                    See what developers are saying about DevSync
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {[
+                    { name: 'Sarah Chen', role: 'Senior Developer', company: 'Tech Corp', text: 'DevSync transformed our code review process. The AI suggestions are incredibly accurate!', avatar: '👩💻' },
+                    { name: 'Mike Rodriguez', role: 'Team Lead', company: 'StartupXYZ', text: 'Best code analysis tool we\'ve used. Saved us countless hours in debugging and refactoring.', avatar: '👨💼' },
+                    { name: 'Alex Johnson', role: 'CTO', company: 'DevStudio', text: 'The AST-based analysis catches issues other tools miss. Highly recommended!', avatar: '🧑💻' }
+                  ].map((testimonial, idx) => (
+                    <div key={idx} className={`p-8 rounded-2xl transition-all duration-500 hover:scale-105 ${
+                      isDarkMode ? 'bg-gray-800/50 border border-gray-700' : 'bg-white border border-gray-200 shadow-xl'
+                    }`}>
+                      <div className="text-5xl mb-4">{testimonial.avatar}</div>
+                      <p className={`mb-6 italic ${
+                        isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                      }`}>"{testimonial.text}"</p>
+                      <div className="border-t pt-4" style={{ borderColor: isDarkMode ? '#374151' : '#e5e7eb' }}>
+                        <div className={`font-semibold ${
+                          isDarkMode ? 'text-white' : 'text-gray-900'
+                        }`}>{testimonial.name}</div>
+                        <div className={`text-sm ${
+                          isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                        }`}>{testimonial.role} at {testimonial.company}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
             {/* How to Use Section */}
             <section className={`py-24 px-6 ${
               isDarkMode ? 'bg-gray-900/50' : 'bg-blue-50/50'
@@ -433,12 +531,15 @@ function LandingPage({ onLogin, onSignup, isDarkMode, setIsDarkMode }) {
               <div className="container mx-auto max-w-6xl px-8">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
                   <div>
-                    <div className="flex items-center mb-4">
+                    <div className="flex items-center gap-3 mb-4">
                       <img 
                         src={isDarkMode ? "/logo_for_blacktheme.png" : "/logo_for_whitetheme.png"} 
                         alt="DevSync" 
                         className="h-8 w-auto transition-opacity duration-500" 
                       />
+                      <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                        DevSync
+                      </span>
                     </div>
                     <p className={`${
                       isDarkMode ? 'text-gray-400' : 'text-gray-600'
@@ -530,11 +631,10 @@ export default function App() {
         } />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/home" element={<Home />} />
+        <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/admin/dashboard" element={<AdminPanel />} />
-        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/features" element={<Features />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/documentation" element={<Documentation />} />

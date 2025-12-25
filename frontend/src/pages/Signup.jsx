@@ -4,12 +4,14 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { toast } from 'sonner'
+import { Sun, Moon } from 'lucide-react'
 import './Signup.css'
 
 export default function Signup(){
     const [username, setUsername] = useState('')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [isDarkMode, setIsDarkMode] = useState(false)
     const nav = useNavigate()
 
     async function handleSignup(){
@@ -23,7 +25,15 @@ export default function Signup(){
     }
     
     return (
-        <div className="signupContainer">
+        <div className={isDarkMode ? "signupContainer" : "signupContainer signupContainerLight"}>
+            {/* Theme Toggle */}
+            <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="signupThemeToggle"
+            >
+                {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </button>
+
             {/* Animated Gradient Orbs */}
             <div className="signupOrb signupTopOrb" />
             <div className="signupOrb signupBottomOrb" />
@@ -34,11 +44,16 @@ export default function Signup(){
                 <div className="signupFormWrapper">
                     {/* Logo */}
                     <div className="signupBrandArea">
-                        <img 
-                            src="/logo_for_blacktheme.png" 
-                            alt="DevSync" 
-                            className="signupLogo" 
-                        />
+                        <div className="flex items-center gap-3 mb-6">
+                            <img 
+                                src={isDarkMode ? "/logo_for_blacktheme.png" : "/logo_for_whitetheme.png"} 
+                                alt="DevSync" 
+                                className="signupLogo" 
+                            />
+                            <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                                DevSync
+                            </span>
+                        </div>
                         <h1 className="signupMainTitle">Join DevSync</h1>
                         <p className="signupSubtext">Create your account and start analyzing code</p>
                     </div>

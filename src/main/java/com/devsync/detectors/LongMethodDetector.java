@@ -9,7 +9,7 @@ import java.util.*;
 
 public class LongMethodDetector {
 
-    private int baseLineThreshold = 20;
+    private int baseLineThreshold = 35;
     private int criticalLineThreshold = 50;
 
     private static final int MAX_CYCLOMATIC_COMPLEXITY = 10;
@@ -19,6 +19,10 @@ public class LongMethodDetector {
     public void setMaxLength(int maxLength) {
         this.baseLineThreshold = Math.max(10, maxLength / 2);
         this.criticalLineThreshold = maxLength;
+    }
+    
+    public void setMaxComplexity(int maxComplexity) {
+        // Complexity is handled internally, but we can store it if needed
     }
 
     private static final Map<String, Double> METHOD_TYPE_WEIGHTS = Map.of(
@@ -39,30 +43,32 @@ public class LongMethodDetector {
         cu.accept(analyzer, null);
 
         for (MethodInfo m : analyzer.getLongMethods()) {
-
-            // Deduplicate using file + method + line
             String key = m.fileName + ":" + m.methodName + ":" + m.lineNumber;
-
             if (processed.contains(key)) continue;
-
-            if (isExcludedMethod(m)) continue;
-
-            if (!shouldReport(m)) continue;
-
             processed.add(key);
 
+            // THRESHOLD CHECK FIRST - binary detection
+            if (m.lineCount < baseLineThreshold && 
+                m.cyclomaticComplexity <= MAX_CYCLOMATIC_COMPLEXITY && 
+                m.cognitiveComplexity <= MAX_COGNITIVE_COMPLEXITY && 
+                m.nestingDepth <= MAX_NESTING_DEPTH) {
+                continue; // NO SMELL - exit immediately
+            }
+
+            // THRESHOLD EXCEEDED - now calculate score for severity only
             double score = calculateScore(m);
             String severity = getSeverity(score);
 
             issues.add(String.format(
-                    "%s [LongMethod] %s:%d - '%s' (%d statements) - %s | Suggestions: %s",
+                    "%s [LongMethod] %s:%d - '%s' (%d statements) - %s | Suggestions: %s | DetailedReason: %s",
                     severity,
                     m.fileName,
                     m.lineNumber,
                     m.methodName,
                     m.lineCount,
                     generateAnalysis(m),
-                    generateSuggestions(m)
+                    generateSuggestions(m),
+                    generateDetailedReason(m)
             ));
         }
 
@@ -89,25 +95,7 @@ public class LongMethodDetector {
         );
     }
 
-    private boolean shouldReport(MethodInfo m) {
-        return m.lineCount > baseLineThreshold ||
-                m.cyclomaticComplexity > MAX_CYCLOMATIC_COMPLEXITY ||
-                m.cognitiveComplexity > MAX_COGNITIVE_COMPLEXITY ||
-                m.nestingDepth > MAX_NESTING_DEPTH ||
-                m.responsibilityCount > 3;
-    }
 
-    private boolean isExcludedMethod(MethodInfo m) {
-        String name = m.methodName.toLowerCase();
-
-        if ((name.startsWith("get") || name.startsWith("set")) && m.lineCount <= 3) return true;
-
-        if (name.equals("main") && m.lineCount < 30) return true;
-
-        if (name.startsWith("test") && m.lineCount < 40) return true;
-
-        return false;
-    }
 
     private String determineMethodType(MethodInfo m) {
         String name = m.methodName.toLowerCase();
@@ -137,6 +125,55 @@ public class LongMethodDetector {
 
     private String generateSuggestions(MethodInfo m) {
         return "Split logic into smaller methods, reduce branching, simplify nested blocks";
+    }
+
+    private String generateDetailedReason(MethodInfo m) {
+        StringBuilder reason = new StringBuilder();
+        reason.append("This method was flagged because: ");
+        
+        List<String> violations = new ArrayList<>();
+        
+        // Check line count
+        if (m.lineCount > criticalLineThreshold) {
+            violations.add(String.format("Statement count is %d (exceeds critical threshold of %d)", m.lineCount, criticalLineThreshold));
+        } else if (m.lineCount > baseLineThreshold) {
+            violations.add(String.format("Statement count is %d (exceeds base threshold of %d)", m.lineCount, baseLineThreshold));
+        } else {
+            violations.add(String.format("Statement count is %d (within threshold of %d)", m.lineCount, baseLineThreshold));
+        }
+        
+        // Check cyclomatic complexity
+        if (m.cyclomaticComplexity > MAX_CYCLOMATIC_COMPLEXITY) {
+            violations.add(String.format("Cyclomatic complexity is %d (exceeds max of %d - too many decision points like if/for/while)", m.cyclomaticComplexity, MAX_CYCLOMATIC_COMPLEXITY));
+        } else {
+            violations.add(String.format("Cyclomatic complexity is %d (within max of %d)", m.cyclomaticComplexity, MAX_CYCLOMATIC_COMPLEXITY));
+        }
+        
+        // Check cognitive complexity
+        if (m.cognitiveComplexity > MAX_COGNITIVE_COMPLEXITY) {
+            violations.add(String.format("Cognitive complexity is %d (exceeds max of %d - too hard to understand)", m.cognitiveComplexity, MAX_COGNITIVE_COMPLEXITY));
+        } else {
+            violations.add(String.format("Cognitive complexity is %d (within max of %d)", m.cognitiveComplexity, MAX_COGNITIVE_COMPLEXITY));
+        }
+        
+        // Check nesting depth
+        if (m.nestingDepth > MAX_NESTING_DEPTH) {
+            violations.add(String.format("Nesting depth is %d levels (exceeds max of %d - deeply nested code is hard to follow)", m.nestingDepth, MAX_NESTING_DEPTH));
+        } else {
+            violations.add(String.format("Nesting depth is %d levels (within max of %d)", m.nestingDepth, MAX_NESTING_DEPTH));
+        }
+        
+        // Check responsibilities
+        if (m.responsibilityCount > 3) {
+            violations.add(String.format("Handles %d different responsibilities (exceeds max of 3 - violates Single Responsibility Principle)", m.responsibilityCount));
+        } else {
+            violations.add(String.format("Handles %d responsibilities (within max of 3)", m.responsibilityCount));
+        }
+        
+        reason.append(String.join("; ", violations));
+        reason.append(". A method is flagged when ANY of these thresholds is exceeded.");
+        
+        return reason.toString();
     }
 
     /*───────────────────────────────────────────────────────────────*/
