@@ -48,6 +48,8 @@ export default function Home() {
   const [showVisualReport, setShowVisualReport] = useState(false)
   const [activeSection, setActiveSection] = useState('guide')
   const [useEnhancedReport, setUseEnhancedReport] = useState(true)
+  const [currentFile, setCurrentFile] = useState(null)
+  const [projectPath, setProjectPath] = useState('')
 
   // Handle returning from file viewer
   useEffect(() => {
@@ -82,6 +84,8 @@ export default function Home() {
     setReportContent('')
     setShowReportModal(false)
     setProjectName('')
+    setCurrentFile(null)
+    setProjectPath('')
     setActiveSection('upload')
     toast.info("Starting new analysis session")
   }
@@ -123,6 +127,9 @@ export default function Home() {
     try {
       // Get userId from localStorage or session
       const userId = localStorage.getItem('userId') || 'anonymous'
+      
+      // Store the file for later use
+      setCurrentFile(file)
       
       // Create FormData for file upload
       const formData = new FormData()
@@ -207,8 +214,9 @@ export default function Home() {
       
       // Extract project path from report path (remove filename)
       if (extractedReportPath) {
-        const projectPath = extractedReportPath.substring(0, extractedReportPath.lastIndexOf('/'))
-        console.log('Extracted project path:', projectPath)
+        const extractedProjectPath = extractedReportPath.substring(0, extractedReportPath.lastIndexOf('/'))
+        setProjectPath(extractedProjectPath)
+        console.log('Extracted project path:', extractedProjectPath)
       }
       
       setAnalysisResults(results)
@@ -300,6 +308,7 @@ export default function Home() {
                 results={analysisResults}
                 onShowReport={handleShowReport}
                 onNewAnalysis={handleNewAnalysis}
+                onVisualReport={currentFile ? () => handleVisualReport(currentFile) : null}
                 isDarkMode={isDarkMode}
               />
             </div>
