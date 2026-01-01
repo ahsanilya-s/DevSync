@@ -2,7 +2,7 @@ import React from 'react'
 import { AlertTriangle, CheckCircle, Info, FileText, TrendingUp, Download } from 'lucide-react'
 import { Button } from './ui/button'
 
-export function AnalysisResults({ results, onShowReport, onNewAnalysis, isDarkMode }) {
+export function AnalysisResults({ results, onShowReport, onNewAnalysis, onVisualReport, isDarkMode }) {
   const totalIssues = results?.totalIssues || 0
   const criticalIssues = results?.criticalIssues || 0
   const warnings = results?.warnings || 0
@@ -167,7 +167,7 @@ export function AnalysisResults({ results, onShowReport, onNewAnalysis, isDarkMo
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-4 justify-center">
+      <div className="flex gap-4 justify-center flex-wrap">
         <Button
           onClick={onShowReport}
           size="lg"
@@ -181,14 +181,29 @@ export function AnalysisResults({ results, onShowReport, onNewAnalysis, isDarkMo
           View Detailed Report
         </Button>
 
+        {onVisualReport && (
+          <Button
+            onClick={onVisualReport}
+            size="lg"
+            className={`px-8 py-6 text-lg font-semibold transition-all duration-300 hover:scale-105 ${
+              isDarkMode
+                ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg shadow-purple-500/30'
+                : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg shadow-purple-400/40'
+            }`}
+          >
+            <TrendingUp className="mr-2 h-5 w-5" />
+            Visual Architecture Report
+          </Button>
+        )}
+
         <Button
           onClick={onNewAnalysis}
           variant="outline"
           size="lg"
           className={`px-8 py-6 text-lg font-semibold transition-all duration-300 hover:scale-105 ${
             isDarkMode
-              ? 'border-purple-500 text-purple-400 hover:bg-purple-500/10'
-              : 'border-purple-500 text-purple-600 hover:bg-purple-50'
+              ? 'border-gray-500 text-gray-400 hover:bg-gray-500/10'
+              : 'border-gray-500 text-gray-600 hover:bg-gray-50'
           }`}
         >
           New Analysis
