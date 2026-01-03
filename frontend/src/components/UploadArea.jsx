@@ -46,7 +46,7 @@ export function UploadArea({ onAnalyze, onVisualReport, isDarkMode }) {
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
-      <Card className={`w-full max-w-2xl p-12 backdrop-blur-sm transition-all duration-500 ${
+      <Card className={`w-full max-w-2xl p-12 mb-8 backdrop-blur-sm transition-all duration-500 ${
         isDarkMode 
           ? 'bg-gray-800/50 border-gray-700'
           : 'bg-white/90 border-blue-100 shadow-xl shadow-blue-100/50'

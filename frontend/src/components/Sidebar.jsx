@@ -17,7 +17,7 @@ export function Sidebar({ onNewAnalysis, onSettingsClick, onHistoryClick, onGitH
           className="h-8 w-auto transition-opacity duration-500" 
         />
         <span className={`text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent`}>
-          DevSync
+          JavaSpector
         </span>
       </div>
 
