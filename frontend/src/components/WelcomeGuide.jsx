@@ -1,22 +1,32 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BookOpen, Upload, BarChart3, FileText, Shield, Zap, CheckCircle2, AlertTriangle, AlertCircle, Info, Code2, GitBranch, TrendingUp, Brain, Sparkles, Cpu, Database, Lock, Eye, Target, Layers, Activity, Rocket, Users, Award, Clock } from 'lucide-react';
+import adminApi from '../api/adminApi';
 
 export function WelcomeGuide({ isDarkMode }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [animatedStats, setAnimatedStats] = useState({ analyses: 0, issues: 0, users: 0 });
+  const [targetStats, setTargetStats] = useState({ analyses: 10000, issues: 50000, users: 5000 });
   const [visibleSections, setVisibleSections] = useState(new Set());
   const sectionRefs = useRef({});
 
   useEffect(() => {
+    adminApi.fetchPlatformStats()
+      .then(stats => {
+        setTargetStats(stats);
+      })
+      .catch(err => console.error('Failed to fetch platform stats:', err));
+  }, []);
+
+  useEffect(() => {
     const interval = setInterval(() => {
       setAnimatedStats(prev => ({
-        analyses: prev.analyses < 10000 ? prev.analyses + 127 : 10000,
-        issues: prev.issues < 50000 ? prev.issues + 634 : 50000,
-        users: prev.users < 5000 ? prev.users + 63 : 5000
+        analyses: prev.analyses < targetStats.analyses ? Math.min(prev.analyses + Math.ceil(targetStats.analyses / 100), targetStats.analyses) : targetStats.analyses,
+        issues: prev.issues < targetStats.issues ? Math.min(prev.issues + Math.ceil(targetStats.issues / 100), targetStats.issues) : targetStats.issues,
+        users: prev.users < targetStats.users ? Math.min(prev.users + Math.ceil(targetStats.users / 100), targetStats.users) : targetStats.users
       }));
     }, 30);
     return () => clearInterval(interval);
-  }, []);
+  }, [targetStats]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

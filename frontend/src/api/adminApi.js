@@ -24,6 +24,15 @@ const adminApi = {
   fixReportCounts: async () => {
     const res = await axios.post('/api/admin/fix-counts')
     return res.data
+  },
+
+  fetchPlatformStats: async () => {
+    const res = await axios.get('/api/admin/dashboard')
+    return {
+      analyses: res.data.aiAnalysisCount || 0,
+      issues: res.data.totalIssues || 0,
+      users: res.data.totalUsers || 0
+    }
   }
 }
 
