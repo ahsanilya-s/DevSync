@@ -68,6 +68,16 @@ export default function Dashboard() {
     }
   }
 
+  const onDeleteReport = async (report) => {
+    try {
+      await historyApi.deleteReport(report.id, report.userId)
+      setReportsData(prev => prev.filter(r => r.id !== report.id))
+      alert('Report deleted successfully')
+    } catch (err) {
+      alert('Failed to delete report: ' + err.message)
+    }
+  }
+
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="flex justify-between items-center mb-6">
@@ -110,7 +120,7 @@ export default function Dashboard() {
 
           <div className="mt-6 p-4 bg-white rounded-lg shadow">
             <h2 className="text-xl font-medium mb-4">Reports</h2>
-            <ReportsTable data={reportsData} onViewReport={onViewReport} />
+            <ReportsTable data={reportsData} onViewReport={onViewReport} onDeleteReport={onDeleteReport} />
           </div>
 
           {selectedReport && (

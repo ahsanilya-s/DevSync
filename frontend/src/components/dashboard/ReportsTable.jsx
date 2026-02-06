@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react'
 
-export default function ReportsTable({ data = [], onViewReport = () => {} }) {
+export default function ReportsTable({ data = [], onViewReport = () => {}, onDeleteReport = null }) {
   const [filter, setFilter] = useState('')
   const [sortDesc, setSortDesc] = useState(true)
+  const [deleting, setDeleting] = useState(null)
 
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase()
@@ -15,6 +16,18 @@ export default function ReportsTable({ data = [], onViewReport = () => {} }) {
     })
     return arr
   }, [data, filter, sortDesc])
+
+  const handleDelete = async (report) => {
+    if (!onDeleteReport) return
+    if (!confirm(`Delete "${report.projectName}"? This cannot be undone.`)) return
+    
+    setDeleting(report.id)
+    try {
+      await onDeleteReport(report)
+    } finally {
+      setDeleting(null)
+    }
+  }
 
   return (
     <div>
@@ -44,7 +57,18 @@ export default function ReportsTable({ data = [], onViewReport = () => {} }) {
                 <td className="px-2 py-2">{r.totalIssues ?? r.issues ?? 0}</td>
                 <td className="px-2 py-2">{r.criticalIssues ?? r.crit ?? 0}</td>
                 <td className="px-2 py-2">
-                  <button onClick={() => onViewReport(r)} className="px-2 py-1 bg-blue-500 text-white rounded">View</button>
+                  <div className="flex gap-2">
+                    <button onClick={() => onViewReport(r)} className="px-2 py-1 bg-blue-500 text-white rounded">View</button>
+                    {onDeleteReport && (
+                      <button 
+                        onClick={() => handleDelete(r)} 
+                        disabled={deleting === r.id}
+                        className="px-2 py-1 bg-red-500 text-white rounded disabled:opacity-50"
+                      >
+                        {deleting === r.id ? '...' : 'Delete'}
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}

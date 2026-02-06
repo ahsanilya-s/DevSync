@@ -45,6 +45,9 @@ public class CodeAnalysisController {
     
     @Autowired
     private AdminSettingsService adminSettingsService;
+    
+    @Autowired
+    private com.devsync.services.FileStorageService fileStorageService;
 
     @GetMapping
     public ResponseEntity<String> getUploadInfo() {
@@ -135,6 +138,37 @@ public class CodeAnalysisController {
             .filter(line -> line.contains("🚨 " + emoji))
             .count();
     }
+    
+    @DeleteMapping("/history/{id}")
+    public ResponseEntity<String> deleteAnalysis(@PathVariable Long id, @RequestParam("userId") String userId) {
+        try {
+            AnalysisHistory history = analysisHistoryRepository.findById(id)
+                .orElseThrow(() -> new Exception("Report not found"));
+            
+            // Verify ownership
+            if (!history.getUserId().equals(userId)) {
+                return ResponseEntity.status(403).body("❌ Access denied");
+            }
+            
+            // Delete files from disk
+            if (history.getProjectPath() != null) {
+                File projectFolder = new File(history.getProjectPath());
+                if (projectFolder.exists()) {
+                    fileStorageService.deleteDirectory(projectFolder);
+                    System.out.println("✅ Deleted files: " + history.getProjectPath());
+                }
+            }
+            
+            // Delete database record
+            analysisHistoryRepository.delete(history);
+            System.out.println("✅ Deleted analysis record: " + history.getProjectName());
+            
+            return ResponseEntity.ok("✅ Analysis deleted successfully");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("❌ Failed to delete: " + e.getMessage());
+        }
+    }
 
     @PostMapping
     public ResponseEntity<String> handleFileUpload(@RequestParam("file") MultipartFile file, 
@@ -179,13 +213,9 @@ public class CodeAnalysisController {
             }
             
             String uniqueFolderName = FolderNamingUtil.generateUniqueFolderName(originalFileName, "uploads");
-            String targetDir = "uploads/" + uniqueFolderName;
-            
-            // Create uploads directory if it doesn't exist
-            java.io.File uploadsDir = new java.io.File("uploads");
-            if (!uploadsDir.exists()) {
-                uploadsDir.mkdirs();
-            }
+            // Use FileStorageService for Railway Volumes support
+            fileStorageService.ensureUploadsDirectoryExists();
+            String targetDir = fileStorageService.getUploadsPath() + "/" + uniqueFolderName;
             
             ZipExtractor.extractZip(file.getInputStream(), targetDir);
 
@@ -330,8 +360,9 @@ public class CodeAnalysisController {
         
         try {
             String originalFileName = file.getOriginalFilename();
-            String uniqueFolderName = FolderNamingUtil.generateUniqueFolderName(originalFileName, "uploads");
-            String targetDir = "uploads/" + uniqueFolderName;
+            String uniqueFolderName = FolderNamingUtil.generateUniqueFolderName(originalFileName, fileStorageService.getUploadsPath());
+            fileStorageService.ensureUploadsDirectoryExists();
+            String targetDir = fileStorageService.getUploadsPath() + "/" + uniqueFolderName;
             ZipExtractor.extractZip(file.getInputStream(), targetDir);
             
             VisualDependencyAnalyzer analyzer = new VisualDependencyAnalyzer();

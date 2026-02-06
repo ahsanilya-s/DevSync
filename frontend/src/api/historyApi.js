@@ -23,6 +23,11 @@ const historyApi = {
     const query = params.toString()
     const res = await axios.get(`/api/upload/report?${query}`)
     return res.data
+  },
+
+  deleteReport: async (reportId, userId) => {
+    const res = await axios.delete(`/api/upload/history/${reportId}?userId=${encodeURIComponent(userId)}`)
+    return res.data
   }
 }
 

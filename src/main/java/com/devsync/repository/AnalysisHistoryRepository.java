@@ -28,4 +28,6 @@ public interface AnalysisHistoryRepository extends JpaRepository<AnalysisHistory
     
     @Query("SELECT MONTH(a.analysisDate) as month, COUNT(a) as count FROM AnalysisHistory a WHERE YEAR(a.analysisDate) = YEAR(CURRENT_DATE) GROUP BY MONTH(a.analysisDate) ORDER BY month ")
     List<Object[]> getMonthlyAnalysisCount();
+    
+    List<AnalysisHistory> findByAnalysisDateBefore(java.time.LocalDateTime date);
 }

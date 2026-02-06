@@ -1,8 +1,9 @@
 import axios from 'axios';
+import { API_BASE_URL } from './config';
 
 const api = axios.create({
-    baseURL: '/api', // vite proxy routes /api -> localhost:8080
-    withCredentials: true // if you use cookies/sessions later
+    baseURL: API_BASE_URL,
+    withCredentials: true
 });
 
 export default api;
