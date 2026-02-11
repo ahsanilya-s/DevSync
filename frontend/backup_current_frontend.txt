@@ -1,3 +1,0 @@
-Backup created before updating frontend design.
-Current frontend backed up on: 2024-12-19
-Original files preserved in case rollback is needed.
