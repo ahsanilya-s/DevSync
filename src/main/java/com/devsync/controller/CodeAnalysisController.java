@@ -72,16 +72,27 @@ public class CodeAnalysisController {
             
             if (!hasAccess) {
                 System.err.println("❌ Access denied - report not found in user history");
-                return ResponseEntity.status(403).body("❌ Access denied to this report");
+                return ResponseEntity.status(403)
+                    .contentType(MediaType.TEXT_PLAIN)
+                    .header(HttpHeaders.CONTENT_TYPE, "text/plain; charset=UTF-8")
+                    .body("❌ Access denied to this report");
             }
             
             System.out.println("✅ Access granted, reading report...");
             String reportContent = ReportGenerator.readReportContent(reportPath);
             System.out.println("✅ Report content loaded: " + reportContent.length() + " characters");
-            return ResponseEntity.ok(reportContent);
+            
+            // Return with explicit UTF-8 encoding to preserve emojis
+            return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_PLAIN)
+                .header(HttpHeaders.CONTENT_TYPE, "text/plain; charset=UTF-8")
+                .body(reportContent);
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().body("❌ Failed to read report: " + e.getMessage());
+            return ResponseEntity.badRequest()
+                .contentType(MediaType.TEXT_PLAIN)
+                .header(HttpHeaders.CONTENT_TYPE, "text/plain; charset=UTF-8")
+                .body("❌ Failed to read report: " + e.getMessage());
         }
     }
     
@@ -243,7 +254,7 @@ public class CodeAnalysisController {
             String comprehensiveReport = reportGen.generateComprehensiveReport(analysisResults);
             
             String reportPath = targetDir + "/" + new java.io.File(targetDir).getName() + "_comprehensive.txt";
-            try (java.io.FileWriter writer = new java.io.FileWriter(reportPath)) {
+            try (java.io.FileWriter writer = new java.io.FileWriter(reportPath, java.nio.charset.StandardCharsets.UTF_8)) {
                 writer.write(comprehensiveReport);
             }
             

@@ -17,7 +17,7 @@ public class ReportGenerator {
         String folderName = new java.io.File(outputDir).getName();
         String reportPath = outputDir + "/" + folderName + ".txt";
 
-        try (FileWriter writer = new FileWriter(reportPath)) {
+        try (FileWriter writer = new FileWriter(reportPath, java.nio.charset.StandardCharsets.UTF_8)) {
             if (issues.isEmpty()) {
                 writer.write("🎉 No issues found in the code.\n");
             } else {
@@ -293,7 +293,7 @@ public class ReportGenerator {
     }
 
     public static void appendAIAnalysis(String reportPath, String aiAnalysis) throws IOException {
-        try (FileWriter writer = new FileWriter(reportPath, true)) {
+        try (FileWriter writer = new FileWriter(reportPath, java.nio.charset.StandardCharsets.UTF_8, true)) {
             writer.write("\n\n=== AI ANALYSIS ===\n");
             writer.write(aiAnalysis);
             writer.write("\n\n=== END AI ANALYSIS ===\n");
@@ -301,6 +301,6 @@ public class ReportGenerator {
     }
 
     public static String readReportContent(String reportPath) throws IOException {
-        return new String(Files.readAllBytes(Paths.get(reportPath)));
+        return new String(Files.readAllBytes(Paths.get(reportPath)), java.nio.charset.StandardCharsets.UTF_8);
     }
 }

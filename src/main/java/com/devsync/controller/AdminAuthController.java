@@ -14,7 +14,12 @@ public class AdminAuthController {
         String username = credentials.get("username");
         String password = credentials.get("password");
         
-        if ("admin".equals(username) && "aaaa".equals(password)) {
+        // TODO: For FYP demo - Change these credentials before production!
+        // Recommended: Use environment variables and encrypted passwords
+        String adminUsername = System.getenv("ADMIN_USERNAME") != null ? System.getenv("ADMIN_USERNAME") : "admin";
+        String adminPassword = System.getenv("ADMIN_PASSWORD") != null ? System.getenv("ADMIN_PASSWORD") : "DevSync@2024";
+        
+        if (adminUsername.equals(username) && adminPassword.equals(password)) {
             return ResponseEntity.ok(Map.of("success", true, "message", "Admin login successful"));
         }
         
